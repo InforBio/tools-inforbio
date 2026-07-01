@@ -1,0 +1,146 @@
+{
+    "exit_code": null,
+    "summary": {
+        "num_errors": 0,
+        "num_failures": 0,
+        "num_skips": 0,
+        "num_tests": 1
+    },
+    "tests": [
+        {
+            "data": {
+                "end_datetime": null,
+                "execution_problem": null,
+                "inputs": {
+                    "assembly": "hg19",
+                    "input_fastq": {
+                        "id": "7f073dc037912fb4",
+                        "src": "hda"
+                    },
+                    "output_prefix": "testOutput"
+                },
+                "invocation_details": null,
+                "job": {
+                    "command_line": "set -euxo pipefail &&     perl $CONDA_PREFIX/share/java/mintmap/MINTmap.pl -f /tmp/tmpiu_sxyhj/files/7/6/9/dataset_7696c48d-52c0-4262-9945-ffc0005b44f4.dat -p testOutput -l /home/joe/galaxy_tools/mintmap/default_files/LookupTable.tRFs.MINTmap_v1.txt -s /home/joe/galaxy_tools/mintmap/default_files/tRNAspace.Spliced.Sequences.MINTmap_v1.fa -o /home/joe/galaxy_tools/mintmap/default_files/OtherAnnotations.MINTmap_v1.txt -a hg19 -j $CONDA_PREFIX/share/java/mintmap/MINTplates/ && pwd && ls -alt . && mv \"testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt\" out_ambig_countsmeta.txt && mv \"testOutput-MINTmap_v1-ambiguous-tRFs.expression.html\" out_ambig_expr_html.html && mv \"testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt\" out_ambig_expr_txt.txt && mv \"testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt\" out_exclu_countsmeta.txt && mv \"testOutput-MINTmap_v1-exclusive-tRFs.expression.html\" out_exclu_expr_html.html && mv \"testOutput-MINTmap_v1-exclusive-tRFs.expression.txt\" out_exclu_expr_txt.txt",
+                    "command_version": "",
+                    "copied_from_job_id": null,
+                    "create_time": "2026-06-26T10:51:58.679873",
+                    "dependencies": [],
+                    "exit_code": 0,
+                    "external_id": "37734",
+                    "galaxy_version": "26.0",
+                    "handler": null,
+                    "history_id": "7f073dc037912fb4",
+                    "id": "52e3d4440bff2608",
+                    "inputs": {
+                        "input_fastq": {
+                            "id": "7f073dc037912fb4",
+                            "src": "hda",
+                            "uuid": "7696c48d-52c0-4262-9945-ffc0005b44f4"
+                        }
+                    },
+                    "job_messages": [],
+                    "job_metrics": [
+                        {
+                            "name": "galaxy_slots",
+                            "plugin": "core",
+                            "raw_value": "1.0000000",
+                            "title": "Cores Allocated",
+                            "value": "1"
+                        },
+                        {
+                            "name": "start_epoch",
+                            "plugin": "core",
+                            "raw_value": "1782471119.0000000",
+                            "title": "Job Start Time",
+                            "value": "2026-06-26 12:51:59"
+                        },
+                        {
+                            "name": "end_epoch",
+                            "plugin": "core",
+                            "raw_value": "1782471140.0000000",
+                            "title": "Job End Time",
+                            "value": "2026-06-26 12:52:20"
+                        },
+                        {
+                            "name": "runtime_seconds",
+                            "plugin": "core",
+                            "raw_value": "21.0000000",
+                            "title": "Job Runtime (Wall Clock)",
+                            "value": "21 seconds"
+                        }
+                    ],
+                    "job_runner_name": null,
+                    "job_stderr": "",
+                    "job_stdout": "",
+                    "model_class": "Job",
+                    "output_collections": {},
+                    "outputs": {
+                        "out_ambig_countsmeta": {
+                            "id": "52e3d4440bff2608",
+                            "src": "hda",
+                            "uuid": "2cfe4fcb-45d8-4e8a-9887-2ddfb0b185fd"
+                        },
+                        "out_ambig_expr_html": {
+                            "id": "41ed65ba3cd53dc1",
+                            "src": "hda",
+                            "uuid": "5dd05705-be87-4acd-9762-d02be686467f"
+                        },
+                        "out_ambig_expr_txt": {
+                            "id": "b87b38e04d3ecc94",
+                            "src": "hda",
+                            "uuid": "af15c517-f26f-4d14-96ec-008dcfd29cbb"
+                        },
+                        "out_exclu_countsmeta": {
+                            "id": "c6aeaff3257ca7b3",
+                            "src": "hda",
+                            "uuid": "301a6a68-54ab-4b79-8ae2-444138fd7975"
+                        },
+                        "out_exclu_expr_html": {
+                            "id": "bf01c151423e5999",
+                            "src": "hda",
+                            "uuid": "e324b59a-e3aa-41a2-8126-1c60f2630f75"
+                        },
+                        "out_exclu_expr_txt": {
+                            "id": "1d4b9fd822846a9f",
+                            "src": "hda",
+                            "uuid": "6e16486d-aa06-4b3b-b9c9-30e5c48ddf6f"
+                        }
+                    },
+                    "params": {
+                        "__input_ext": "\"fastqsanger\"",
+                        "assembly": "\"hg19\"",
+                        "chromInfo": "\"/tmp/tmpiu_sxyhj/galaxy-dev/tool-data/shared/ucsc/chrom/?.len\"",
+                        "dbkey": "\"?\"",
+                        "lookup_table": null,
+                        "output_prefix": "\"testOutput\"",
+                        "reference_trna": null,
+                        "trf_types": null
+                    },
+                    "state": "ok",
+                    "stderr": "+ perl /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl -f /tmp/tmpiu_sxyhj/files/7/6/9/dataset_7696c48d-52c0-4262-9945-ffc0005b44f4.dat -p testOutput -l /home/joe/galaxy_tools/mintmap/default_files/LookupTable.tRFs.MINTmap_v1.txt -s /home/joe/galaxy_tools/mintmap/default_files/tRNAspace.Spliced.Sequences.MINTmap_v1.fa -o /home/joe/galaxy_tools/mintmap/default_files/OtherAnnotations.MINTmap_v1.txt -a hg19 -j /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTplates/\nRedundant argument in printf at /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl line 416.\nRedundant argument in printf at /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl line 416.\n+ pwd\n+ ls -alt .\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt out_ambig_countsmeta.txt\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.expression.html out_ambig_expr_html.html\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt out_ambig_expr_txt.txt\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt out_exclu_countsmeta.txt\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.expression.html out_exclu_expr_html.html\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.expression.txt out_exclu_expr_txt.txt\n",
+                    "stdout": "/home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl (MINTmap_v1) starting\nLoading spliced tRNA sequences\nLoading tRF annotations\nLoading Lookup Table\nReading in fastq file\nRunning Java-based MINTplates\nGenerating output:\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.expression.txt\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.expression.html\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.expression.html\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt\n/tmp/tmpiu_sxyhj/job_working_directory/000/2/working\ntotal 1504\ndrwxr-xr-x  2 joe joe   4096 Jun 26 12:52 .\n-rw-r--r--  1 joe joe     98 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt\n-rw-r--r--  1 joe joe 376866 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.expression.html\n-rw-r--r--  1 joe joe 250460 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt\n-rw-r--r--  1 joe joe     98 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt\n-rw-r--r--  1 joe joe 560153 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.expression.html\n-rw-r--r--  1 joe joe 326078 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.expression.txt\n-rw-r--r--  1 joe joe      0 Jun 26 12:51 conda_activate.log\ndrwxr-xr-x 12 joe joe   4096 Jun 26 12:51 ..\n",
+                    "tool_id": "mintmap",
+                    "tool_stderr": "+ perl /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl -f /tmp/tmpiu_sxyhj/files/7/6/9/dataset_7696c48d-52c0-4262-9945-ffc0005b44f4.dat -p testOutput -l /home/joe/galaxy_tools/mintmap/default_files/LookupTable.tRFs.MINTmap_v1.txt -s /home/joe/galaxy_tools/mintmap/default_files/tRNAspace.Spliced.Sequences.MINTmap_v1.fa -o /home/joe/galaxy_tools/mintmap/default_files/OtherAnnotations.MINTmap_v1.txt -a hg19 -j /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTplates/\nRedundant argument in printf at /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl line 416.\nRedundant argument in printf at /home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl line 416.\n+ pwd\n+ ls -alt .\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt out_ambig_countsmeta.txt\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.expression.html out_ambig_expr_html.html\n+ mv testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt out_ambig_expr_txt.txt\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt out_exclu_countsmeta.txt\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.expression.html out_exclu_expr_html.html\n+ mv testOutput-MINTmap_v1-exclusive-tRFs.expression.txt out_exclu_expr_txt.txt\n",
+                    "tool_stdout": "/home/joe/miniconda3/envs/mulled-v1-63b0504addfd08ed3d70888742fce9a1c577d4ba19394ce271e7b31e76981bab/share/java/mintmap/MINTmap.pl (MINTmap_v1) starting\nLoading spliced tRNA sequences\nLoading tRF annotations\nLoading Lookup Table\nReading in fastq file\nRunning Java-based MINTplates\nGenerating output:\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.expression.txt\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.expression.html\nCreating output file: testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.expression.html\nCreating output file: testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt\n/tmp/tmpiu_sxyhj/job_working_directory/000/2/working\ntotal 1504\ndrwxr-xr-x  2 joe joe   4096 Jun 26 12:52 .\n-rw-r--r--  1 joe joe     98 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt\n-rw-r--r--  1 joe joe 376866 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.expression.html\n-rw-r--r--  1 joe joe 250460 Jun 26 12:52 testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt\n-rw-r--r--  1 joe joe     98 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt\n-rw-r--r--  1 joe joe 560153 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.expression.html\n-rw-r--r--  1 joe joe 326078 Jun 26 12:52 testOutput-MINTmap_v1-exclusive-tRFs.expression.txt\n-rw-r--r--  1 joe joe      0 Jun 26 12:51 conda_activate.log\ndrwxr-xr-x 12 joe joe   4096 Jun 26 12:51 ..\n",
+                    "update_time": "2026-06-26T10:52:20.079932",
+                    "user_email": "planemo@galaxyproject.org",
+                    "user_id": "7f073dc037912fb4"
+                },
+                "output_problems": null,
+                "problem_log": null,
+                "start_datetime": null,
+                "status": "success",
+                "test_index": 0,
+                "time_seconds": 34.40252232551575,
+                "tool_id": "mintmap",
+                "tool_version": "1.0.0"
+            },
+            "doc": null,
+            "has_data": true,
+            "id": "mintmap-0",
+            "test_type": null
+        }
+    ],
+    "version": "0.1"
+}
