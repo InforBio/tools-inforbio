@@ -1,0 +1,10 @@
+categories:
+- Fasta Manipulation
+- Text Manipulation
+description: A suite of tools for quantifying tRFs with MINTmap
+long_description: |
+  This repository contains a suite of tools for tRFs analysis workflows
+    1. lintmap_input_generator: generates the lookup table and the tRF type table for MINTmap
+    2. mintmap: maps and quantifies tRFs from small RNA seq dataset
+name: mintmap_input_generator
+owner: JUEDA

@@ -3,7 +3,7 @@
 ## configured via command line options for the corresponding commands.
 
 ## Specify a default galaxy_root for test and server commands here.
-#galaxy_root: /home/joe/galaxy_tools
+## galaxy_root: 
 ## Username used with toolshed(s).
 shed_username: "jueda"
 sheds:
