@@ -1,0 +1,84 @@
+<tool id="split_bam_pseudoreplicates" name="Create IDR pseudoreplicates" version="1.0.0+galaxy0" profile="23.0">
+    <description>split a BAM into two complementary, mate-preserving partitions</description>
+    <requirements>
+        <requirement type="package" version="1.22.1">samtools</requirement>
+        <requirement type="package" version="3.12">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/split_bam_pseudoreplicates.py'
+    --input '$input_bam'
+    --output-a '$output_a'
+    --output-b '$output_b'
+    --index-a '$output_a_index'
+    --index-b '$output_b_index'
+    --report '$report'
+    --seed '$seed'
+    --threads "${GALAXY_SLOTS:-1}"
+    ]]></command>
+    <inputs>
+        <param name="input_bam" type="data" format="bam" label="Input BAM"
+               help="A filtered BAM for one replicate, or a BAM made by merging replicates." />
+        <param name="seed" type="integer" min="0" value="12345" label="Random seed"
+               help="The same BAM and seed always produce the same two complementary partitions." />
+    </inputs>
+    <outputs>
+        <data name="output_a" format="bam" label="${tool.name} on ${on_string}: pseudoreplicate 1" />
+        <data name="output_b" format="bam" label="${tool.name} on ${on_string}: pseudoreplicate 2" />
+        <data name="output_a_index" format="bai" label="${tool.name} on ${on_string}: pseudoreplicate 1 index" />
+        <data name="output_b_index" format="bai" label="${tool.name} on ${on_string}: pseudoreplicate 2 index" />
+        <data name="report" format="tabular" label="${tool.name} on ${on_string}: split report" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_bam" value="input.bam" ftype="bam" />
+            <param name="seed" value="12345" />
+            <output name="output_a" ftype="bam" />
+            <output name="output_b" ftype="bam" />
+            <output name="output_a_index" ftype="bai" />
+            <output name="output_b_index" ftype="bai" />
+            <output name="report" ftype="tabular">
+                <assert_contents>
+                    <has_text text="input_alignment_records&#x9;16" />
+                    <has_text text="pseudoreplicate_1_alignment_records&#x9;8" />
+                    <has_text text="pseudoreplicate_2_alignment_records&#x9;8" />
+                    <has_text text="complementary_partitions&#x9;true" />
+                    <has_text text="coordinate_sorted&#x9;true" />
+                    <has_text text="indexed&#x9;true" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+This tool creates the two complementary pseudoreplicates needed by an IDR
+ChIP-seq workflow. Every BAM alignment is assigned to exactly one output.
+Assignment is based on a reproducible keyed hash of the complete query name.
+
+Because all records with the same query name receive the same assignment,
+paired reads, secondary alignments, and supplementary alignments remain in the
+same pseudoreplicate. Both outputs are coordinate-sorted, validated, and
+indexed.
+
+The split is random-like and approximately 50/50. It is not guaranteed to have
+exactly the same number of records in both outputs. For normal ChIP-seq library
+sizes, the relative difference is expected to be small.
+
+**IDR usage**
+
+For pooled pseudoreplicates, first merge all ChIP BAMs together and all matched
+control BAMs together. Run this tool independently on the pooled ChIP BAM and
+the pooled control BAM, using a recorded seed. Call peaks on corresponding
+partitions (ChIP 1 versus control 1, ChIP 2 versus control 2), then compare the
+two peak lists with IDR.
+
+For self-consistency, run the tool separately on each biological replicate and
+its matched control.
+
+Do not replace this operation with two independent 50% downsampling jobs: those
+would overlap and would not form complementary partitions.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1214/11-AOAS466</citation>
+    </citations>
+</tool>

@@ -1,0 +1,12 @@
+name: split_bam_pseudoreplicates
+owner: InforBio
+description: Create two complementary, reproducible, mate-preserving BAM pseudoreplicates for IDR
+long_description: |
+  Galaxy wrapper that assigns every BAM query name to exactly one of two
+  reproducible pseudoreplicates. Paired, secondary, and supplementary records
+  sharing a query name stay together. Outputs are coordinate-sorted and indexed.
+categories:
+  - ChIP-seq
+  - SAM
+remote_repository_url: null
+type: unrestricted
