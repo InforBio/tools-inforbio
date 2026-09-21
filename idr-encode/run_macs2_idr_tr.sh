@@ -1,172 +1,181 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-
-
-# ============================================================================
 # ChIP-seq Analysis Pipeline: MACS2 Peak Calling with IDR For True Replicates
-# ============================================================================
 
-set -euo pipefail  # Exit on error, undefined variables, and pipe failures
+set -euo pipefail
 
-# Start timing
-start_time=$(date +%s)
+usage() {
+    cat <<'EOF'
+Usage:
+  run_macs2_idr_tr.sh --sample NAME --output-dir DIR
+      [--treatment-1 BAM --control-1 BAM --treatment-2 BAM --control-2 BAM]
+      [--peak-1 NARROWPEAK --peak-2 NARROWPEAK]
+      [MACS2 and IDR options]
 
-# ============================================================================
-# Load Required Modules
-# ============================================================================
-module load samtools/1.9
-module load macs2/2.2.7.1
-module load idr/2.0.4.2
+If both --peak-1 and --peak-2 are supplied, they are reused and MACS2 is not
+run for this branch. Otherwise, all four BAM options are required.
 
-# ============================================================================
-# Validate Input Arguments
-# ============================================================================
-if [ $# -ne 1 ]; then
-    echo "Error: Incorrect number of arguments."
-    echo "Usage: $0 <sample_name>"
-    echo "Example: $0 H1"
+MACS2 options (original script defaults):
+  --format FORMAT             BAMPE
+  --genome-size SIZE          1.87e9
+  --bandwidth BP              300
+  --mfold-low N               2
+  --mfold-high N              50
+  --pvalue P                  0.01 (mutually exclusive with --qvalue)
+  --qvalue Q                  Use an FDR cutoff instead of a p-value cutoff
+  --macs2-extra-arg ARG       Append one literal MACS2 argument; repeat as needed
+
+IDR options:
+  --rank METHOD               p.value, q.value, or signal.value [p.value]
+EOF
+}
+
+die() {
+    echo "ERROR: $*" >&2
     exit 1
+}
+
+require_value() {
+    [[ $# -ge 2 ]] || die "option $1 requires a value"
+}
+
+sample_name=""
+output_dir=""
+treatment_1=""
+treatment_2=""
+control_1=""
+control_2=""
+peak_1=""
+peak_2=""
+macs2_format="BAMPE"
+genome_size="1.87e9"
+bandwidth="300"
+mfold_low="2"
+mfold_high="50"
+cutoff_type="pvalue"
+cutoff_value="0.01"
+idr_rank="p.value"
+macs2_extra_args=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --sample) require_value "$@"; sample_name="$2"; shift 2 ;;
+        --output-dir) require_value "$@"; output_dir="$2"; shift 2 ;;
+        --treatment-1) require_value "$@"; treatment_1="$2"; shift 2 ;;
+        --treatment-2) require_value "$@"; treatment_2="$2"; shift 2 ;;
+        --control-1) require_value "$@"; control_1="$2"; shift 2 ;;
+        --control-2) require_value "$@"; control_2="$2"; shift 2 ;;
+        --peak-1) require_value "$@"; peak_1="$2"; shift 2 ;;
+        --peak-2) require_value "$@"; peak_2="$2"; shift 2 ;;
+        --format) require_value "$@"; macs2_format="$2"; shift 2 ;;
+        --genome-size) require_value "$@"; genome_size="$2"; shift 2 ;;
+        --bandwidth) require_value "$@"; bandwidth="$2"; shift 2 ;;
+        --mfold-low) require_value "$@"; mfold_low="$2"; shift 2 ;;
+        --mfold-high) require_value "$@"; mfold_high="$2"; shift 2 ;;
+        --pvalue) require_value "$@"; cutoff_type="pvalue"; cutoff_value="$2"; shift 2 ;;
+        --qvalue) require_value "$@"; cutoff_type="qvalue"; cutoff_value="$2"; shift 2 ;;
+        --rank) require_value "$@"; idr_rank="$2"; shift 2 ;;
+        --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
+        --help|-h) usage; exit 0 ;;
+        *) die "unknown option: $1" ;;
+    esac
+done
+
+[[ -n "$sample_name" ]] || die "--sample is required"
+[[ "$sample_name" =~ ^[A-Za-z0-9._-]+$ ]] || die "--sample may contain only letters, numbers, dots, underscores, and hyphens"
+[[ -n "$output_dir" ]] || die "--output-dir is required"
+
+case "$idr_rank" in
+    signal.value) rank_column=7 ;;
+    p.value) rank_column=8 ;;
+    q.value) rank_column=9 ;;
+    *) die "--rank must be p.value, q.value, or signal.value" ;;
+esac
+
+for value in "$genome_size" "$bandwidth" "$mfold_low" "$mfold_high" "$cutoff_value"; do
+    [[ -n "$value" ]] || die "MACS2 parameter values cannot be empty"
+done
+
+if [[ -n "$peak_1" || -n "$peak_2" ]]; then
+    [[ -n "$peak_1" && -n "$peak_2" ]] || die "--peak-1 and --peak-2 must be supplied together"
+    [[ -f "$peak_1" ]] || die "narrowPeak file not found: $peak_1"
+    [[ -f "$peak_2" ]] || die "narrowPeak file not found: $peak_2"
+    input_peak_1="$peak_1"
+    input_peak_2="$peak_2"
+    input_mode="BAM + narrowPeak"
+else
+    for value in "$treatment_1" "$control_1" "$treatment_2" "$control_2"; do
+        [[ -n "$value" ]] || die "all four BAM options are required when narrowPeak files are not supplied"
+        [[ -f "$value" ]] || die "BAM file not found: $value"
+    done
+    input_mode="BAM only"
 fi
 
-sample_name="$1"
+command -v idr >/dev/null 2>&1 || die "idr was not found on PATH"
+if [[ "$input_mode" == "BAM only" ]]; then
+    command -v macs2 >/dev/null 2>&1 || die "macs2 was not found on PATH"
+fi
 
-# ============================================================================
-# Define Variables
-# ============================================================================
-input_wt1="${sample_name}_WT1"
-input_wt2="${sample_name}_WT2"
-input_ko1="${sample_name}_KO1"
-input_ko2="${sample_name}_KO2"
-
-proj_dir="/shared/projects/chipseq_topo6"
-data_dir="$proj_dir/data"
-out_dir="$proj_dir/outputs"
-tmp_dir="$out_dir/tmp"
-log_dir="$proj_dir/logs"
-
-# ============================================================================
-# Create Output Directories
-# ============================================================================
-mkdir -p "$tmp_dir"
-mkdir -p "$out_dir/idr"
-mkdir -p "$log_dir"
+start_time=$(date +%s)
+mkdir -p "$output_dir/idr" "$output_dir/tmp"
+tmp_dir=$(mktemp -d "$output_dir/tmp/true-replicates.XXXXXX")
+trap 'rm -rf -- "$tmp_dir"' EXIT
 
 echo "========================================================================"
-echo "ChIP-seq Analysis Pipeline"
-echo "========================================================================"
+echo "True-replicate IDR branch"
 echo "Sample: $sample_name"
-echo "WT files: ${input_wt1}.bam, ${input_wt2}.bam"
-echo "KO file: ${input_ko1}.bam ${input_ko2}.bam"
+echo "Input mode: $input_mode"
 echo "Start time: $(date)"
 echo "========================================================================"
 
-# ============================================================================
-# Check Input Files Exist
-# ============================================================================
-echo ""
-echo "===> [${sample_name}] Checking input BAM files <==="
+if [[ "$input_mode" == "BAM only" ]]; then
+    macs2_common=(
+        --format "$macs2_format"
+        --gsize "$genome_size"
+        --bw "$bandwidth"
+        --mfold "$mfold_low" "$mfold_high"
+        "--$cutoff_type" "$cutoff_value"
+        --tempdir "$tmp_dir"
+    )
+    macs2_common+=("${macs2_extra_args[@]}")
 
-for bam_file in "${input_wt1}.bam" "${input_wt2}.bam" "${input_ko1}.bam" "${input_ko2}.bam"; do
-    if [ ! -f "${data_dir}/${bam_file}" ]; then
-        echo "ERROR: ${data_dir}/${bam_file} not found!"
-        exit 1
-    fi
-    echo "[OK] Found: ${bam_file}"
-done
+    echo "===> [$sample_name] MACS2 peak calling on biological replicate 1"
+    macs2 callpeak \
+        -t "$treatment_1" \
+        -c "$control_1" \
+        --outdir "$output_dir" \
+        --name "${sample_name}_rep1" \
+        "${macs2_common[@]}"
 
+    echo "===> [$sample_name] MACS2 peak calling on biological replicate 2"
+    macs2 callpeak \
+        -t "$treatment_2" \
+        -c "$control_2" \
+        --outdir "$output_dir" \
+        --name "${sample_name}_rep2" \
+        "${macs2_common[@]}"
 
-# ============================================================================
-# MACS2 Peak Calling - Replicate 1
-# ============================================================================
-echo ""
-echo "===> [${sample_name}] MACS2 peak calling on replicate 1 <==="
-echo $(date)
+    input_peak_1="$output_dir/${sample_name}_rep1_peaks.narrowPeak"
+    input_peak_2="$output_dir/${sample_name}_rep2_peaks.narrowPeak"
+fi
 
-macs2 callpeak \
-    -t "${data_dir}/${input_wt1}.bam" \
-    -c "${data_dir}/${input_ko1}.bam" \
-    --format BAMPE \
-    --gsize 1.87e9 \
-    --outdir "${out_dir}/" \
-    --name "${sample_name}_rep1" \
-    --bw 300 \
-    --mfold 2 50 \
-    --pvalue 0.01 \
-    --tempdir "${tmp_dir}"
+sorted_peak_1="$tmp_dir/${sample_name}_rep1.sorted.narrowPeak"
+sorted_peak_2="$tmp_dir/${sample_name}_rep2.sorted.narrowPeak"
+LC_ALL=C sort -k"$rank_column","$rank_column"nr "$input_peak_1" > "$sorted_peak_1"
+LC_ALL=C sort -k"$rank_column","$rank_column"nr "$input_peak_2" > "$sorted_peak_2"
 
-echo "[OK] MACS2 completed for replicate 1"
-
-# ============================================================================
-# MACS2 Peak Calling - Replicate 2
-# ============================================================================
-echo ""
-echo "===> [${sample_name}] MACS2 peak calling on replicate 2 <==="
-echo $(date)
-
-macs2 callpeak \
-    -t "${data_dir}/${input_wt2}.bam" \
-    -c "${data_dir}/${input_ko2}.bam" \
-    --format BAMPE \
-    --gsize 1.87e9 \
-    --outdir "${out_dir}/" \
-    --name "${sample_name}_rep2" \
-    --bw 300 \
-    --mfold 2 50 \
-    --pvalue 0.01 \
-    --tempdir "${tmp_dir}"
-
-echo "[OK] MACS2 completed for replicate 2"
-
-# ============================================================================
-# IDR Analysis
-# ============================================================================
-echo ""
-echo "===> [${sample_name}] Running IDR analysis <==="
-echo $(date)
-
-# Sort peaks by significance (column 8: -log10(p-value))
-sort -k8,8nr "${out_dir}/${sample_name}_rep1_peaks.narrowPeak" > \
-    "${tmp_dir}/${sample_name}_rep1.sorted_By_Column_8.narrowPeak"
-
-sort -k8,8nr "${out_dir}/${sample_name}_rep2_peaks.narrowPeak" > \
-    "${tmp_dir}/${sample_name}_rep2.sorted_By_Column_8.narrowPeak"
-
-# Run IDR
+echo "===> [$sample_name] IDR analysis for true replicates"
 idr --samples \
-    "${tmp_dir}/${sample_name}_rep1.sorted_By_Column_8.narrowPeak" \
-    "${tmp_dir}/${sample_name}_rep2.sorted_By_Column_8.narrowPeak" \
+    "$sorted_peak_1" \
+    "$sorted_peak_2" \
     --input-file-type narrowPeak \
-    --rank p.value \
-    --output-file "${out_dir}/idr/${sample_name}_tr_idr.txt" \
+    --rank "$idr_rank" \
+    --output-file "$output_dir/idr/${sample_name}_tr_idr.txt" \
     --plot \
-    --log-output-file "${out_dir}/idr/${sample_name}_tr_idr.log"
-
-echo "[OK] IDR analysis completed"
-
-# ============================================================================
-# Cleanup
-# ============================================================================
-# echo ""
-# echo "===> [${sample_name}] Cleaning up temporary files <==="
-# rm -f "${tmp_dir}/${sample_name}_rep1."*
-# rm -f "${tmp_dir}/${sample_name}_rep2."*
-# echo "[OK] Cleanup completed (temporary files retained for debugging)"
-
-# ============================================================================
-# Summary and Timing
-# ============================================================================
-echo ""
-echo "========================================================================"
-echo "Pipeline Completed Successfully"
-echo "========================================================================"
+    --log-output-file "$output_dir/idr/${sample_name}_tr_idr.log"
 
 end_time=$(date +%s)
 elapsed=$((end_time - start_time))
-hours=$((elapsed / 3600))
-minutes=$(((elapsed % 3600) / 60))
-seconds=$((elapsed % 60))
-
-echo "Sample: $sample_name"
-echo "End time: $(date)"
-printf "Total processing time: %02d:%02d:%02d (HH:MM:SS)\n" $hours $minutes $seconds
-echo "========================================================================"
+printf '[OK] True-replicate branch completed in %02d:%02d:%02d\n' \
+    "$((elapsed / 3600))" "$(((elapsed % 3600) / 60))" "$((elapsed % 60))"
+printf 'IDR output: %s\n' "$output_dir/idr/${sample_name}_tr_idr.txt"
