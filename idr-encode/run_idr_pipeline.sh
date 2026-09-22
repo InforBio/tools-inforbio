@@ -141,10 +141,17 @@ done
 
 ###### Input file validation ######
 
-for path in "${treatment_bams[@]}" "${control_bams[@]}" "${narrowpeaks[@]}"; do
+for path in "${treatment_bams[@]}" "${control_bams[@]}"; do
     [[ -f "$path" ]] || die "input file not found: $path"
 done
 
+
+###### Validation of narrowPeak files if they are provided ######
+if [[ ${#narrowpeaks[@]} -gt 0 ]]; then
+    for path in "${narrowpeaks[@]}"; do
+        [[ -f "$path" ]] || die "input file not found: $path"
+    done
+fi
 
 ###### Locating the three branch scripts ######
 
@@ -171,9 +178,11 @@ common_args=(
     "--$cutoff_type" "$cutoff_value"  ############################################
     --rank "$idr_rank"
 )
-for extra_arg in "${macs2_extra_args[@]}"; do
-    common_args+=(--macs2-extra-arg "$extra_arg")
-done
+if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
+    for extra_arg in "${macs2_extra_args[@]}"; do
+        common_args+=(--macs2-extra-arg "$extra_arg")
+    done
+fi
 
 
 ###### Run the three branches ######
@@ -210,9 +219,11 @@ parameter_file="$output_dir/run_parameters.tsv"
     printf 'idr_rank\t%s\n' "$idr_rank"
     printf 'threads\t%s\n' "$threads"
     printf 'seed\t%s\n' "$seed"
-    for extra_arg in "${macs2_extra_args[@]}"; do
-        printf 'macs2_extra_arg\t%s\n' "$extra_arg"
-    done
+    if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
+        for extra_arg in "${macs2_extra_args[@]}"; do
+            printf 'macs2_extra_arg\t%s\n' "$extra_arg"
+        done
+    fi
 } > "$parameter_file"
 
 echo "========================================================================"
@@ -233,28 +244,36 @@ true_args=(
 if [[ "$input_mode" == "bam_and_narrowpeak" ]]; then
     true_args+=(--peak-1 "${narrowpeaks[0]}" --peak-2 "${narrowpeaks[1]}")
 fi
-bash "$true_script" "${true_args[@]}"
+if ! bash "$true_script" "${true_args[@]}"; then
+    die "true-replicate branch failed"
+fi
 
-bash "$pooled_script" \
-    "${common_args[@]}" \
-    --output-dir "$output_dir/pooled_pseudoreplicates" \
-    --treatment-1 "${treatment_bams[0]}" \
-    --control-1 "${control_bams[0]}" \
-    --treatment-2 "${treatment_bams[1]}" \
-    --control-2 "${control_bams[1]}" \
-    --threads "$threads" \
-    --seed "$seed"
+if ! bash "$pooled_script" \
+        "${common_args[@]}" \
+        --output-dir "$output_dir/pooled_pseudoreplicates" \
+        --treatment-1 "${treatment_bams[0]}" \
+        --control-1 "${control_bams[0]}" \
+        --treatment-2 "${treatment_bams[1]}" \
+        --control-2 "${control_bams[1]}" \
+        --threads "$threads" \
+        --seed "$seed"
+then
+    die "pooled-pseudoreplicate branch failed"
+fi
 
 for index in 0 1; do
     label="${replicate_labels[$index]}"
-    bash "$self_script" \
-        "${common_args[@]}" \
-        --replicate-label "$label" \
-        --output-dir "$output_dir/self_consistency/$label" \
-        --treatment "${treatment_bams[$index]}" \
-        --control "${control_bams[$index]}" \
-        --threads "$threads" \
-        --seed "$((seed + index))"
+    if ! bash "$self_script" \
+            "${common_args[@]}" \
+            --replicate-label "$label" \
+            --output-dir "$output_dir/self_consistency/$label" \
+            --treatment "${treatment_bams[$index]}" \
+            --control "${control_bams[$index]}" \
+            --threads "$threads" \
+            --seed "$((seed + index))"
+    then
+        die "self-consistency branch failed for $label"
+    fi
 done
 
 results_file="$output_dir/idr_results.tsv"

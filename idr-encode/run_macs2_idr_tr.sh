@@ -137,7 +137,9 @@ if [[ "$input_mode" == "BAM only" ]]; then
         "--$cutoff_type" "$cutoff_value"
         --tempdir "$tmp_dir"
     )
-    macs2_common+=("${macs2_extra_args[@]}")
+    if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
+        macs2_common+=("${macs2_extra_args[@]}")
+    fi
 
     echo "===> [$sample_name] MACS2 peak calling on biological replicate 1"
     macs2 callpeak \

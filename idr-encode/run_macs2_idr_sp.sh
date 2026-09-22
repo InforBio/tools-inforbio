@@ -158,7 +158,9 @@ macs2_common=(
     "--$cutoff_type" "$cutoff_value"
     --tempdir "$tmp_dir"
 )
-macs2_common+=("${macs2_extra_args[@]}")
+if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
+    macs2_common+=("${macs2_extra_args[@]}")
+fi
 
 echo "===> [$comparison] MACS2 peak calling on self pseudoreplicate 00"
 macs2 callpeak \
