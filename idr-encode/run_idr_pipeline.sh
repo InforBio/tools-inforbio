@@ -36,6 +36,7 @@ MACS2 options (defaults retained from the original scripts):
 
 Other options:
   --rank METHOD               p.value, q.value, or signal.value [p.value]
+  --idr-threshold P           Global IDR cutoff used to retain/count peaks [0.05]
   --threads N                 samtools threads [GALAXY_SLOTS or 1]
   --seed N                    pseudo-replicate assignment seed [0]
 EOF
@@ -68,6 +69,7 @@ mfold_high="50"
 cutoff_type="pvalue"
 cutoff_value="0.01"
 idr_rank="p.value"
+idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
 macs2_extra_args=()
@@ -90,6 +92,7 @@ while [[ $# -gt 0 ]]; do # while there are still arguments to process
         --pvalue) require_value "$@"; cutoff_type="pvalue"; cutoff_value="$2"; shift 2 ;;
         --qvalue) require_value "$@"; cutoff_type="qvalue"; cutoff_value="$2"; shift 2 ;;
         --rank) require_value "$@"; idr_rank="$2"; shift 2 ;;
+        --idr-threshold) require_value "$@"; idr_threshold="$2"; shift 2 ;;
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
@@ -124,6 +127,7 @@ case "$idr_rank" in
     p.value|q.value|signal.value) ;;
     *) die "--rank must be p.value, q.value, or signal.value" ;;
 esac
+[[ "$idr_threshold" =~ ^(0[.][0-9]*[1-9][0-9]*|1([.]0+)?)$ ]] || die "--idr-threshold must be greater than 0 and no greater than 1"
 
 #####################################
 
@@ -177,6 +181,7 @@ common_args=(
     --mfold-high "$mfold_high"
     "--$cutoff_type" "$cutoff_value"  ############################################
     --rank "$idr_rank"
+    --idr-threshold "$idr_threshold"
 )
 if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
     for extra_arg in "${macs2_extra_args[@]}"; do
@@ -217,6 +222,7 @@ parameter_file="$output_dir/run_parameters.tsv"
     printf 'mfold_high\t%s\n' "$mfold_high"
     printf '%s\t%s\n' "$cutoff_type" "$cutoff_value"
     printf 'idr_rank\t%s\n' "$idr_rank"
+    printf 'idr_threshold\t%s\n' "$idr_threshold"
     printf 'threads\t%s\n' "$threads"
     printf 'seed\t%s\n' "$seed"
     if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
@@ -290,8 +296,52 @@ results_file="$output_dir/idr_results.tsv"
     done
 } > "$results_file"
 
+true_idr_file="$output_dir/true_replicates/idr/${sample_name}_tr_idr.txt"
+pooled_idr_file="$output_dir/pooled_pseudoreplicates/idr/${sample_name}_pp_idr.txt"
+self_1_idr_file="$output_dir/self_consistency/${replicate_labels[0]}/idr/${sample_name}_${replicate_labels[0]}_sp_idr.txt"
+self_2_idr_file="$output_dir/self_consistency/${replicate_labels[1]}/idr/${sample_name}_${replicate_labels[1]}_sp_idr.txt"
+
+for idr_file in "$true_idr_file" "$pooled_idr_file" "$self_1_idr_file" "$self_2_idr_file"; do
+    [[ -f "$idr_file" ]] || die "expected IDR result not found: $idr_file"
+done
+
+Nt=$(awk 'END { print NR + 0 }' "$true_idr_file")
+Np=$(awk 'END { print NR + 0 }' "$pooled_idr_file")
+N1=$(awk 'END { print NR + 0 }' "$self_1_idr_file")
+N2=$(awk 'END { print NR + 0 }' "$self_2_idr_file")
+
+calculate_ratio() {
+    local first="$1"
+    local second="$2"
+    awk -v first="$first" -v second="$second" 'BEGIN {
+        if (first == 0 || second == 0) {
+            printf "NA"
+        } else if (first >= second) {
+            printf "%.6f", first / second
+        } else {
+            printf "%.6f", second / first
+        }
+    }'
+}
+
+rescue_ratio=$(calculate_ratio "$Nt" "$Np")
+self_consistency_ratio=$(calculate_ratio "$N1" "$N2")
+
+summary_file="$output_dir/idr_summary.tsv"
+{
+    printf 'sample\treplicate_1\treplicate_2\tidr_threshold\tNt\tNp\tN1\tN2\trescue_ratio\tself_consistency_ratio\n'
+    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$sample_name" \
+        "${replicate_labels[0]}" \
+        "${replicate_labels[1]}" \
+        "$idr_threshold" \
+        "$Nt" "$Np" "$N1" "$N2" \
+        "$rescue_ratio" "$self_consistency_ratio"
+} > "$summary_file"
+
 echo "========================================================================"
 echo "[OK] All IDR branches completed"
 echo "Result manifest: $results_file"
+echo "IDR summary: $summary_file"
 echo "Run parameters: $parameter_file"
 echo "========================================================================"

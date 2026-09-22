@@ -23,6 +23,7 @@ MACS2 options (original script defaults):
 
 Other options:
   --rank METHOD               p.value, q.value, or signal.value [p.value]
+  --idr-threshold P           Global IDR cutoff used to retain peaks [0.05]
   --threads N                 samtools threads [1]
   --seed N                    Accepted for orchestrator compatibility [0]
 EOF
@@ -110,6 +111,7 @@ mfold_high="50"
 cutoff_type="pvalue"
 cutoff_value="0.01"
 idr_rank="p.value"
+idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
 macs2_extra_args=()
@@ -129,6 +131,7 @@ while [[ $# -gt 0 ]]; do
         --pvalue) require_value "$@"; cutoff_type="pvalue"; cutoff_value="$2"; shift 2 ;;
         --qvalue) require_value "$@"; cutoff_type="qvalue"; cutoff_value="$2"; shift 2 ;;
         --rank) require_value "$@"; idr_rank="$2"; shift 2 ;;
+        --idr-threshold) require_value "$@"; idr_threshold="$2"; shift 2 ;;
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
@@ -153,6 +156,7 @@ case "$idr_rank" in
     q.value) rank_column=9 ;;
     *) die "--rank must be p.value, q.value, or signal.value" ;;
 esac
+[[ "$idr_threshold" =~ ^(0[.][0-9]*[1-9][0-9]*|1([.]0+)?)$ ]] || die "--idr-threshold must be greater than 0 and no greater than 1"
 
 for program in samtools macs2 idr awk sort cut; do
     command -v "$program" >/dev/null 2>&1 || die "$program was not found on PATH"
@@ -219,6 +223,7 @@ idr --samples \
     "$sorted_peak_01" \
     --input-file-type narrowPeak \
     --rank "$idr_rank" \
+    --idr-threshold "$idr_threshold" \
     --output-file "$output_dir/idr/${comparison}_sp_idr.txt" \
     --plot \
     --log-output-file "$output_dir/idr/${comparison}_sp_idr.log"
