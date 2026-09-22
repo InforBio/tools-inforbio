@@ -43,29 +43,60 @@ split_bam() {
     local output_1="$3"
     local label="$4"
     local split_seed="$5"
+    local collated="$tmp_dir/${label}.collated.bam"
     local header="$tmp_dir/${label}.header.sam"
-    local body_prefix="$tmp_dir/${label}."
-    local body_0="${body_prefix}00"
-    local body_1="${body_prefix}01"
-    local record_count
-    local records_per_half
+    local body_0="$tmp_dir/${label}.00.sam"
+    local body_1="$tmp_dir/${label}.01.sam"
 
-    samtools view -H "$input_bam" > "$header"
-    record_count=$(samtools view "$input_bam" | wc -l)
-    [[ "$record_count" -ge 2 ]] || die "cannot split $input_bam: fewer than two alignment records"
-    records_per_half=$(( (record_count + 1) / 2 ))
-
-    # shuffle individual SAM alignment records, then split the stream into two
-    # equal-sized chunks. Random keys make that strategy repeatable for a seed.
-    samtools view "$input_bam" | \
-        awk -v seed="$split_seed" 'BEGIN { srand(seed) } { printf "%.17f\t%012d\t%s\n", rand(), NR, $0 }' | \
-        LC_ALL=C sort -T "$tmp_dir" -k1,1n -k2,2n | \
-        cut -f3- | \
-        split -d -l "$records_per_half" - "$body_prefix"
+    # Keep every QNAME group intact so paired-end mates are never assigned to
+    # different pseudoreplicates. Randomize complete QNAME groups with a seeded
+    # key, then distribute successive groups alternately between the two halves.
+    samtools collate -@ "$threads" -o "$collated" "$input_bam" # regroup aligned reads by QNAME (=read name)
+    samtools view -H "$collated" > "$header"
+    samtools view "$collated" | \
+        awk -v seed="$split_seed" '
+            BEGIN { srand(seed); previous = ""; group = 0; member = 0 }
+            {
+                # Assign a random key to each QNAME group, then print the key, group number, member number, and the original line.
+                if ($1 != previous) {
+                    previous = $1
+                    group++
+                    member = 0
+                    key = rand()
+                }
+                member++
+                printf "%.17f\t%012d\t%06d\t%s\n", key, group, member, $0
+            }
+        ' | \
+        LC_ALL=C sort -T "$tmp_dir" -k1,1n -k2,2n -k3,3n | \
+        cut -f4- | \
+        awk -v output_0="$body_0" -v output_1="$body_1" '
+            BEGIN { previous = ""; group = 0 }
+            {
+                if ($1 != previous) {
+                    previous = $1
+                    destination = group % 2
+                    group++
+                }
+                if (destination == 0) {
+                    print > output_0
+                } else {
+                    print > output_1
+                }
+            }
+            END { close(output_0); close(output_1) }
+        '
 
     [[ -s "$body_0" && -s "$body_1" ]] || die "cannot split $input_bam into two nonempty pseudoreplicates"
-    { cat "$header" "$body_0"; } | samtools view -@ "$threads" -bS - > "$output_0"
-    { cat "$header" "$body_1"; } | samtools view -@ "$threads" -bS - > "$output_1"
+    # Convert the two pseudoreplicate SAM files back to sorted BAM files
+    { cat "$header" "$body_0"; } | \
+        samtools view -@ "$threads" -bS - | \
+        samtools sort -@ "$threads" -o "$output_0" -
+    { cat "$header" "$body_1"; } | \
+        samtools view -@ "$threads" -bS - | \
+        samtools sort -@ "$threads" -o "$output_1" -
+    # automatically checks for BAM validity and indexability
+    samtools quickcheck -v "$output_0" "$output_1" || die "invalid pseudoreplicate BAM produced from $input_bam"
 }
 
 sample_name=""
@@ -127,7 +158,7 @@ for value in "$treatment_1" "$control_1" "$treatment_2" "$control_2"; do
     [[ -n "$value" ]] || die "all four BAM options are required"
     [[ -f "$value" ]] || die "BAM file not found: $value"
 done
-for program in samtools macs2 idr awk sort cut split wc; do
+for program in samtools macs2 idr awk sort cut; do
     command -v "$program" >/dev/null 2>&1 || die "$program was not found on PATH"
 done
 

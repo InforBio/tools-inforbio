@@ -42,27 +42,59 @@ split_bam() {
     local output_0="$2"
     local output_1="$3"
     local label="$4"
+    local split_seed="$5"
     local collated="$tmp_dir/${label}.collated.bam"
     local header="$tmp_dir/${label}.header.sam"
-    local body_prefix="$tmp_dir/${label}.collated."
-    local body_0="${body_prefix}00"
-    local body_1="${body_prefix}01"
-    local record_count
-    local records_per_half
+    local body_0="$tmp_dir/${label}.00.sam"
+    local body_1="$tmp_dir/${label}.01.sam"
 
     samtools collate -@ "$threads" -o "$collated" "$input_bam"
     samtools view -H "$collated" > "$header"
 
-    # Preserve the original self-consistency strategy: collate the BAM and
-    # divide its alignment-record stream into two equal-sized chunks.
-    record_count=$(samtools view "$collated" | wc -l)
-    [[ "$record_count" -ge 2 ]] || die "cannot split $input_bam: fewer than two alignment records"
-    records_per_half=$(( (record_count + 1) / 2 ))
-    samtools view "$collated" | split -d -l "$records_per_half" - "$body_prefix"
+    # Keep every QNAME group intact so paired-end mates are never assigned to
+    # different pseudoreplicates. Randomize complete QNAME groups with a seeded
+    # key, then distribute successive groups alternately between the two halves.
+    samtools view "$collated" | \
+        awk -v seed="$split_seed" '
+            BEGIN { srand(seed); previous = ""; group = 0; member = 0 }
+            {
+                if ($1 != previous) {
+                    previous = $1
+                    group++
+                    member = 0
+                    key = rand()
+                }
+                member++
+                printf "%.17f\t%012d\t%06d\t%s\n", key, group, member, $0
+            }
+        ' | \
+        LC_ALL=C sort -T "$tmp_dir" -k1,1n -k2,2n -k3,3n | \
+        cut -f4- | \
+        awk -v output_0="$body_0" -v output_1="$body_1" '
+            BEGIN { previous = ""; group = 0 }
+            {
+                if ($1 != previous) {
+                    previous = $1
+                    destination = group % 2
+                    group++
+                }
+                if (destination == 0) {
+                    print > output_0
+                } else {
+                    print > output_1
+                }
+            }
+            END { close(output_0); close(output_1) }
+        '
 
     [[ -s "$body_0" && -s "$body_1" ]] || die "cannot split $input_bam into two nonempty pseudoreplicates"
-    { cat "$header" "$body_0"; } | samtools view -@ "$threads" -bS - > "$output_0"
-    { cat "$header" "$body_1"; } | samtools view -@ "$threads" -bS - > "$output_1"
+    { cat "$header" "$body_0"; } | \
+        samtools view -@ "$threads" -bS - | \
+        samtools sort -@ "$threads" -o "$output_0" -
+    { cat "$header" "$body_1"; } | \
+        samtools view -@ "$threads" -bS - | \
+        samtools sort -@ "$threads" -o "$output_1" -
+    samtools quickcheck -v "$output_0" "$output_1" || die "invalid pseudoreplicate BAM produced from $input_bam"
 }
 
 sample_name=""
@@ -98,8 +130,6 @@ while [[ $# -gt 0 ]]; do
         --qvalue) require_value "$@"; cutoff_type="qvalue"; cutoff_value="$2"; shift 2 ;;
         --rank) require_value "$@"; idr_rank="$2"; shift 2 ;;
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
-        # The original self-consistency method is collate-then-split and has no
-        # random seed. Accept this option because the orchestrator supplies it.
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         --help|-h) usage; exit 0 ;;
@@ -124,7 +154,7 @@ case "$idr_rank" in
     *) die "--rank must be p.value, q.value, or signal.value" ;;
 esac
 
-for program in samtools macs2 idr sort split wc; do
+for program in samtools macs2 idr awk sort cut; do
     command -v "$program" >/dev/null 2>&1 || die "$program was not found on PATH"
 done
 
@@ -147,8 +177,8 @@ control_00="$tmp_dir/${comparison}.control.00.bam"
 control_01="$tmp_dir/${comparison}.control.01.bam"
 
 echo "===> [$comparison] Creating treatment and control pseudoreplicates"
-split_bam "$treatment_bam" "$treatment_00" "$treatment_01" "treatment"
-split_bam "$control_bam" "$control_00" "$control_01" "control"
+split_bam "$treatment_bam" "$treatment_00" "$treatment_01" "treatment" "$seed"
+split_bam "$control_bam" "$control_00" "$control_01" "control" "$((seed + 1))"
 
 macs2_common=(
     --format "$macs2_format"
