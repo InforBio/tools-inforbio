@@ -53,7 +53,7 @@ split_bam() {
     # different pseudoreplicates. Randomize complete QNAME groups with a seeded
     # key, then distribute successive groups alternately between the two halves.
     samtools collate -@ "$threads" -o "$collated" "$input_bam" # regroup aligned reads by QNAME (=read name)
-    samtools view -H "$collated" > "$header"
+    samtools view -H "$collated" > "$header" # sauvegarde le header du fichier BAM
     samtools view "$collated" | \
         awk -v seed="$split_seed" '
             BEGIN { srand(seed); previous = ""; group = 0; member = 0 }
