@@ -38,67 +38,6 @@ require_value() {
     [[ $# -ge 2 ]] || die "option $1 requires a value"
 }
 
-split_bam() {
-    local input_bam="$1"
-    local output_0="$2"
-    local output_1="$3"
-    local label="$4"
-    local split_seed="$5"
-    local collated="$tmp_dir/${label}.collated.bam"
-    local header="$tmp_dir/${label}.header.sam"
-    local body_0="$tmp_dir/${label}.00.sam"
-    local body_1="$tmp_dir/${label}.01.sam"
-
-    # Keep every QNAME group intact so paired-end mates are never assigned to
-    # different pseudoreplicates. Randomize complete QNAME groups with a seeded
-    # key, then distribute successive groups alternately between the two halves.
-    samtools collate -@ "$threads" -o "$collated" "$input_bam" # regroup aligned reads by QNAME (=read name)
-    samtools view -H "$collated" > "$header" # sauvegarde le header du fichier BAM
-    samtools view "$collated" | \
-        awk -v seed="$split_seed" '
-            BEGIN { srand(seed); previous = ""; group = 0; member = 0 }
-            {
-                # Assign a random key to each QNAME group, then print the key, group number, member number, and the original line.
-                if ($1 != previous) {
-                    previous = $1
-                    group++
-                    member = 0
-                    key = rand()
-                }
-                member++
-                printf "%.17f\t%012d\t%06d\t%s\n", key, group, member, $0
-            }
-        ' | \
-        LC_ALL=C sort -T "$tmp_dir" -k1,1n -k2,2n -k3,3n | \
-        cut -f4- | \
-        awk -v output_0="$body_0" -v output_1="$body_1" '
-            BEGIN { previous = ""; group = 0 }
-            {
-                if ($1 != previous) {
-                    previous = $1
-                    destination = group % 2
-                    group++
-                }
-                if (destination == 0) {
-                    print > output_0
-                } else {
-                    print > output_1
-                }
-            }
-            END { close(output_0); close(output_1) }
-        '
-
-    [[ -s "$body_0" && -s "$body_1" ]] || die "cannot split $input_bam into two nonempty pseudoreplicates"
-    # Convert the two pseudoreplicate SAM files back to sorted BAM files
-    { cat "$header" "$body_0"; } | \
-        samtools view -@ "$threads" -bS - | \
-        samtools sort -@ "$threads" -o "$output_0" -
-    { cat "$header" "$body_1"; } | \
-        samtools view -@ "$threads" -bS - | \
-        samtools sort -@ "$threads" -o "$output_1" -
-    # automatically checks for BAM validity and indexability
-    samtools quickcheck -v "$output_0" "$output_1" || die "invalid pseudoreplicate BAM produced from $input_bam"
-}
 
 sample_name=""
 output_dir=""
@@ -162,7 +101,7 @@ for value in "$treatment_1" "$control_1" "$treatment_2" "$control_2"; do
     [[ -n "$value" ]] || die "all four BAM options are required"
     [[ -f "$value" ]] || die "BAM file not found: $value"
 done
-for program in samtools macs2 idr awk sort cut; do
+for program in samtools macs2 idr sort; do
     command -v "$program" >/dev/null 2>&1 || die "$program was not found on PATH"
 done
 
@@ -177,18 +116,48 @@ echo "Sample: $sample_name"
 echo "Start time: $(date)"
 echo "========================================================================"
 
-echo "===> [$sample_name] Pooling treatment and control BAMs"
-pooled_treatment="$tmp_dir/${sample_name}.treatment.pooled.bam"
-pooled_control="$tmp_dir/${sample_name}.control.pooled.bam"
-samtools merge -@ "$threads" -f -u "$pooled_treatment" "$treatment_1" "$treatment_2"
-samtools merge -@ "$threads" -f -u "$pooled_control" "$control_1" "$control_2"
+echo "===> [$sample_name] Pooling and splitting treatment and control BAMs"
 
 treatment_00="$tmp_dir/${sample_name}.treatment.pooled.00.bam"
 treatment_01="$tmp_dir/${sample_name}.treatment.pooled.01.bam"
 control_00="$tmp_dir/${sample_name}.control.pooled.00.bam"
 control_01="$tmp_dir/${sample_name}.control.pooled.01.bam"
-split_bam "$pooled_treatment" "$treatment_00" "$treatment_01" "pooled-treatment" "$seed"
-split_bam "$pooled_control" "$control_00" "$control_01" "pooled-control" "$((seed + 1))"
+
+# samtools -@ specifies additional threads besides the main thread.
+if (( threads > 1 )); then
+    view_threads=$((threads - 1))
+else
+    view_threads=0
+fi
+
+echo "===> [$sample_name] Creating pooled treatment pseudoreplicates"
+
+samtools merge -u - "$treatment_1" "$treatment_2" |
+    samtools view \
+            -@ "$view_threads" \
+            -1 \
+            --subsample-seed "$seed" \
+            --subsample 0.5 \
+            -o "$treatment_00" \
+            -U "$treatment_01" \
+            -
+
+samtools merge -u - "$control_1" "$control_2" |
+    samtools view \
+            -@ "$view_threads" \
+            -1 \
+            --subsample-seed "$((seed + 1))" \
+            --subsample 0.5 \
+            -o "$control_00" \
+            -U "$control_01" \
+            -
+
+samtools quickcheck -v \
+    "$treatment_00" \
+    "$treatment_01" \
+    "$control_00" \
+    "$control_01" ||
+    die "invalid pooled pseudoreplicate BAM produced"
 
 macs2_common=(
     --format "$macs2_format"
