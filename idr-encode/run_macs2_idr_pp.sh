@@ -38,42 +38,6 @@ require_value() {
     [[ $# -ge 2 ]] || die "option $1 requires a value"
 }
 
-# Print the original BAM path when its header declares coordinate sorting.
-# Otherwise, create a coordinate-sorted temporary BAM and print that path.
-# Messages are sent to stderr so command substitution captures only the path.
-prepare_bam_for_merge() {
-    local input_bam="$1"
-    local label="$2"
-    local sorted_bam="$tmp_dir/${label}.coordinate-sorted.bam"
-
-    if samtools view -H "$input_bam" |
-        awk -F '\t' '
-            $1 == "@HD" {
-                for (i = 2; i <= NF; i++) {
-                    if ($i == "SO:coordinate") {
-                        found = 1
-                    }
-                }
-            }
-            END { exit(found ? 0 : 1) }
-        '
-    then
-        echo "===> [$sample_name] Coordinate-sorted BAM detected: $input_bam" >&2
-        printf '%s\n' "$input_bam"
-    else
-        echo "===> [$sample_name] Sorting BAM by coordinate: $input_bam" >&2
-        samtools sort \
-            -@ "$view_threads" \
-            -T "$tmp_dir/${label}.sort" \
-            -o "$sorted_bam" \
-            "$input_bam"
-        samtools quickcheck -v "$sorted_bam" ||
-            die "invalid coordinate-sorted BAM produced from $input_bam"
-        printf '%s\n' "$sorted_bam"
-    fi
-}
-
-
 sample_name=""
 output_dir=""
 treatment_1=""
@@ -145,6 +109,22 @@ mkdir -p "$output_dir/idr" "$output_dir/tmp"
 tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates.XXXXXX")
 trap 'rm -rf -- "$tmp_dir"' EXIT
 
+check_sequence_dictionary_compatibility() {
+    local bam1="$1"
+    local bam2="$2"
+    local label="$3"
+    local dict1="$tmp_dir/${label}.1.sq"
+    local dict2="$tmp_dir/${label}.2.sq"
+
+    samtools view -H "$bam1" | awk '$1 == "@SQ"' > "$dict1"
+    samtools view -H "$bam2" | awk '$1 == "@SQ"' > "$dict2"
+
+    if ! cmp -s "$dict1" "$dict2"; then
+        die "$label BAMs have different sequence dictionaries and cannot be concatenated safely with samtools cat: $bam1 vs $bam2"
+    fi
+}
+
+
 echo "========================================================================"
 echo "Pooled-pseudoreplicate IDR branch"
 echo "Sample: $sample_name"
@@ -165,16 +145,13 @@ else
     view_threads=0
 fi
 
-# samtools merge expects inputs ordered in the same way. Reuse BAMs whose
-# headers declare coordinate sorting; sort only inputs that do not.
-treatment_1_for_merge=$(prepare_bam_for_merge "$treatment_1" "treatment-1")
-treatment_2_for_merge=$(prepare_bam_for_merge "$treatment_2" "treatment-2")
-control_1_for_merge=$(prepare_bam_for_merge "$control_1" "control-1")
-control_2_for_merge=$(prepare_bam_for_merge "$control_2" "control-2")
+echo "===> [$sample_name] Checking BAM sequence dictionary compatibility"
+check_sequence_dictionary_compatibility "$treatment_1" "$treatment_2" "treatment"
+check_sequence_dictionary_compatibility "$control_1" "$control_2" "control"
 
 echo "===> [$sample_name] Creating pooled treatment pseudoreplicates"
 
-samtools merge -u - "$treatment_1_for_merge" "$treatment_2_for_merge" |
+samtools cat "$treatment_1" "$treatment_2" |
     samtools view \
             -@ "$view_threads" \
             -1 \
