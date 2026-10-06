@@ -25,7 +25,7 @@ Other options:
   --rank METHOD               p.value, q.value, or signal.value [p.value]
   --idr-threshold P           Global IDR cutoff used to retain peaks [0.05]
   --threads N                 samtools threads [1]
-  --seed N                    pooled record-shuffle seed [0]
+  --seed N                    pooled template-subsampling seed [0]
 EOF
 }
 
@@ -36,6 +36,41 @@ die() {
 
 require_value() {
     [[ $# -ge 2 ]] || die "option $1 requires a value"
+}
+
+# Print the original BAM path when its header declares coordinate sorting.
+# Otherwise, create a coordinate-sorted temporary BAM and print that path.
+# Messages are sent to stderr so command substitution captures only the path.
+prepare_bam_for_merge() {
+    local input_bam="$1"
+    local label="$2"
+    local sorted_bam="$tmp_dir/${label}.coordinate-sorted.bam"
+
+    if samtools view -H "$input_bam" |
+        awk -F '\t' '
+            $1 == "@HD" {
+                for (i = 2; i <= NF; i++) {
+                    if ($i == "SO:coordinate") {
+                        found = 1
+                    }
+                }
+            }
+            END { exit(found ? 0 : 1) }
+        '
+    then
+        echo "===> [$sample_name] Coordinate-sorted BAM detected: $input_bam" >&2
+        printf '%s\n' "$input_bam"
+    else
+        echo "===> [$sample_name] Sorting BAM by coordinate: $input_bam" >&2
+        samtools sort \
+            -@ "$view_threads" \
+            -T "$tmp_dir/${label}.sort" \
+            -o "$sorted_bam" \
+            "$input_bam"
+        samtools quickcheck -v "$sorted_bam" ||
+            die "invalid coordinate-sorted BAM produced from $input_bam"
+        printf '%s\n' "$sorted_bam"
+    fi
 }
 
 
@@ -101,7 +136,7 @@ for value in "$treatment_1" "$control_1" "$treatment_2" "$control_2"; do
     [[ -n "$value" ]] || die "all four BAM options are required"
     [[ -f "$value" ]] || die "BAM file not found: $value"
 done
-for program in samtools macs2 idr sort; do
+for program in samtools macs2 idr awk sort; do
     command -v "$program" >/dev/null 2>&1 || die "$program was not found on PATH"
 done
 
@@ -130,9 +165,16 @@ else
     view_threads=0
 fi
 
+# samtools merge expects inputs ordered in the same way. Reuse BAMs whose
+# headers declare coordinate sorting; sort only inputs that do not.
+treatment_1_for_merge=$(prepare_bam_for_merge "$treatment_1" "treatment-1")
+treatment_2_for_merge=$(prepare_bam_for_merge "$treatment_2" "treatment-2")
+control_1_for_merge=$(prepare_bam_for_merge "$control_1" "control-1")
+control_2_for_merge=$(prepare_bam_for_merge "$control_2" "control-2")
+
 echo "===> [$sample_name] Creating pooled treatment pseudoreplicates"
 
-samtools merge -u - "$treatment_1" "$treatment_2" |
+samtools merge -u - "$treatment_1_for_merge" "$treatment_2_for_merge" |
     samtools view \
             -@ "$view_threads" \
             -1 \
@@ -142,7 +184,7 @@ samtools merge -u - "$treatment_1" "$treatment_2" |
             -U "$treatment_01" \
             -
 
-samtools merge -u - "$control_1" "$control_2" |
+samtools merge -u - "$control_1_for_merge" "$control_2_for_merge" |
     samtools view \
             -@ "$view_threads" \
             -1 \
