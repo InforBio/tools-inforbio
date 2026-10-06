@@ -124,6 +124,38 @@ check_sequence_dictionary_compatibility() {
     fi
 }
 
+set_bam_sort_order_unsorted() {
+    local bam="$1"
+    local label="$2"
+    local header="$tmp_dir/${label}.unsorted.header.sam"
+    local reheadered="$tmp_dir/${label}.unsorted.bam"
+
+    # Make the @HD sort-order metadata truthful after concatenation/subsampling.
+    # Handles SO:coordinate, SO:queryname (or any other SO value), and no SO field.
+    samtools view -H "$bam" | awk '
+        BEGIN { OFS="\t"; seen_hd=0 }
+        /^@HD/ {
+            seen_hd=1
+            found_so=0
+            for (i=2; i<=NF; i++) {
+                if ($i ~ /^SO:/) {
+                    $i="SO:unsorted"
+                    found_so=1
+                }
+            }
+            if (!found_so) {
+                $(++NF)="SO:unsorted"
+            }
+        }
+        NR==1 && $1 != "@HD" {
+            print "@HD", "VN:1.6", "SO:unsorted"
+        }
+        { print }
+    ' > "$header"
+
+    samtools reheader "$header" "$bam" > "$reheadered"
+    mv "$reheadered" "$bam"
+}
 
 echo "========================================================================"
 echo "Pooled-pseudoreplicate IDR branch"
@@ -161,7 +193,7 @@ samtools cat "$treatment_1" "$treatment_2" |
             -U "$treatment_01" \
             -
 
-samtools merge -u - "$control_1_for_merge" "$control_2_for_merge" |
+samtools cat "$control_1" "$control_2" |
     samtools view \
             -@ "$view_threads" \
             -1 \
@@ -170,6 +202,12 @@ samtools merge -u - "$control_1_for_merge" "$control_2_for_merge" |
             -o "$control_00" \
             -U "$control_01" \
             -
+
+echo "===> [$sample_name] Marking pooled pseudoreplicates as unsorted in BAM headers"
+set_bam_sort_order_unsorted "$treatment_00" "treatment.00"
+set_bam_sort_order_unsorted "$treatment_01" "treatment.01"
+set_bam_sort_order_unsorted "$control_00" "control.00"
+set_bam_sort_order_unsorted "$control_01" "control.01"
 
 samtools quickcheck -v \
     "$treatment_00" \
