@@ -1,0 +1,169 @@
+<tool id="idr_encode" name="ChIP-seq reproducibility" version="0.1.0" profile="23.0">
+    <description>with true, pooled and self pseudoreplicate IDR</description>
+    <requirements>
+        <requirement type="package" version="2.2.9.1">macs2</requirement>
+        <requirement type="package" version="2.0.4.2">idr</requirement>
+        <requirement type="package" version="1.21">samtools</requirement>
+        <!-- IDR uses np.int; the Bioconda IDR recipe requires numpy &lt; 1.20. -->
+        <requirement type="package" version="1.19.5">numpy</requirement>
+    </requirements>
+    <version_command><![CDATA[
+macs2 --version && idr --version && samtools --version
+    ]]></version_command>
+    <command detect_errors="exit_code"><![CDATA[
+bash '$__tool_directory__/run_idr_pipeline.sh'
+    --sample idr
+    --output-dir output
+    --treatment-bam '$treatment_1'
+    --control-bam '$control_1'
+    --treatment-bam '$treatment_2'
+    --control-bam '$control_2'
+    --replicate-label rep1
+    --replicate-label rep2
+    --format '$macs_options.input_format'
+    --genome-size '$macs_options.genome_size'
+    --bandwidth '$macs_options.bandwidth'
+    --mfold-low '$macs_options.mfold_low'
+    --mfold-high '$macs_options.mfold_high'
+    --$macs_options.cutoff.kind '$macs_options.cutoff.value'
+    --rank '$idr_options.rank'
+    --idr-threshold '${"%.12f" % float($idr_options.threshold)}'
+    --threads \${GALAXY_SLOTS:-1}
+    --seed '$idr_options.seed'
+    --macs2-extra-arg '--keep-dup'
+    --macs2-extra-arg '$macs_options.keep_dup'
+#if $macs_options.nomodel
+    --macs2-extra-arg '--nomodel'
+#end if
+#if $peak_input.mode == 'existing'
+    --narrowpeak '$peak_input.peak_1'
+    --narrowpeak '$peak_input.peak_2'
+#end if
+    > '$pipeline_log' 2>&1
+    ]]></command>
+    <inputs>
+        <param name="treatment_1" type="data" format="bam" label="ChIP BAM — biological replicate 1" />
+        <param name="treatment_2" type="data" format="bam" label="ChIP BAM — biological replicate 2" />
+        <param name="control_1" type="data" format="bam" label="Matched control BAM — replicate 1" />
+        <param name="control_2" type="data" format="bam" label="Matched control BAM — replicate 2" />
+        <conditional name="peak_input">
+            <param name="mode" type="select" label="Peaks for the true-replicate comparison">
+                <option value="call" selected="true">Call peaks from BAM files</option>
+                <option value="existing">Reuse two existing narrowPeak files</option>
+            </param>
+            <when value="call" />
+            <when value="existing">
+                <param name="peak_1" type="data" format="bed" label="narrowPeak — biological replicate 1" help="MACS2 narrowPeak file with ten columns, represented as BED in Galaxy." />
+                <param name="peak_2" type="data" format="bed" label="narrowPeak — biological replicate 2" help="MACS2 narrowPeak file with ten columns, represented as BED in Galaxy." />
+            </when>
+        </conditional>
+        <section name="macs_options" title="MACS2 peak calling" expanded="true">
+            <param name="input_format" type="select" label="Read layout">
+                <option value="BAMPE" selected="true">Paired-end (BAMPE)</option>
+                <option value="BAM">Single-end (BAM)</option>
+            </param>
+            <param name="genome_size" type="text" value="1.87e9" label="Effective genome size" help="Positive number of effectively mappable bases, for example 1.87e9; choose a value appropriate for your organism.">
+                <validator type="regex" message="Enter a positive number, optionally in scientific notation.">^(?=.*[1-9])[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$</validator>
+            </param>
+            <param name="bandwidth" type="integer" value="300" min="1" label="Model bandwidth (bp)" />
+            <param name="mfold_low" type="integer" value="2" min="1" label="Lower model fold-enrichment bound" />
+            <param name="mfold_high" type="integer" value="50" min="1" label="Upper model fold-enrichment bound" help="Must be greater than the lower bound. Model parameters are not used in BAMPE mode." />
+            <conditional name="cutoff">
+                <param name="kind" type="select" label="Peak-calling significance cutoff">
+                    <option value="pvalue" selected="true">P-value</option>
+                    <option value="qvalue">Q-value (FDR)</option>
+                </param>
+                <when value="pvalue">
+                    <param name="value" type="float" value="0.01" min="0.000000000001" max="1" label="P-value cutoff" />
+                </when>
+                <when value="qvalue">
+                    <param name="value" type="float" value="0.05" min="0.000000000001" max="1" label="Q-value cutoff" />
+                </when>
+            </conditional>
+            <param name="nomodel" type="boolean" checked="false" label="Skip fragment-size model building" help="Relevant to single-end data; BAMPE uses observed fragment lengths." />
+            <param name="keep_dup" type="select" label="MACS2 duplicate handling" help="Applied independently in each peak-calling run. Choose consistently with BAM preprocessing and with any supplied narrowPeak files.">
+                <option value="1" selected="true">Keep at most one fragment/tag per identical position (MACS2 default)</option>
+                <option value="auto">Determine the limit automatically</option>
+                <option value="all">Keep all fragments/tags</option>
+            </param>
+        </section>
+        <section name="idr_options" title="IDR and pseudoreplicates" expanded="false">
+            <param name="rank" type="select" label="Peak-ranking score">
+                <option value="p.value" selected="true">P-value score (column 8)</option>
+                <option value="q.value">Q-value score (column 9)</option>
+                <option value="signal.value">Signal value (column 7)</option>
+            </param>
+            <param name="threshold" type="float" value="0.05" min="0.000000000001" max="1" label="Global IDR threshold" help="Only peaks passing this threshold are reported and counted." />
+            <param name="seed" type="integer" value="0" min="0" max="2147483645" label="Pseudoreplicate assignment seed" help="The scripts derive additional seeds for controls and the second biological replicate." />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="summary" format="tabular" from_work_dir="output/idr_summary.tsv" label="${tool.name} on ${on_string}: IDR summary and ratios" />
+        <data name="parameters" format="tabular" from_work_dir="output/run_parameters.tsv" label="${tool.name} on ${on_string}: run parameters" />
+        <data name="manifest" format="tabular" from_work_dir="output/idr_results.tsv" label="${tool.name} on ${on_string}: branch manifest" />
+        <data name="tr_idr" format="tabular" from_work_dir="output/true_replicates/idr/idr_tr_idr.txt" label="${tool.name} on ${on_string}: true-replicate IDR peaks (Nt)" />
+        <data name="pp_idr" format="tabular" from_work_dir="output/pooled_pseudoreplicates/idr/idr_pp_idr.txt" label="${tool.name} on ${on_string}: pooled-pseudoreplicate IDR peaks (Np)" />
+        <data name="sp1_idr" format="tabular" from_work_dir="output/self_consistency/rep1/idr/idr_rep1_sp_idr.txt" label="${tool.name} on ${on_string}: replicate 1 self IDR peaks (N1)" />
+        <data name="sp2_idr" format="tabular" from_work_dir="output/self_consistency/rep2/idr/idr_rep2_sp_idr.txt" label="${tool.name} on ${on_string}: replicate 2 self IDR peaks (N2)" />
+        <data name="tr_plot" format="png" from_work_dir="output/true_replicates/idr/idr_tr_idr.txt.png" label="${tool.name} on ${on_string}: true-replicate IDR plot" />
+        <data name="pp_plot" format="png" from_work_dir="output/pooled_pseudoreplicates/idr/idr_pp_idr.txt.png" label="${tool.name} on ${on_string}: pooled-pseudoreplicate IDR plot" />
+        <data name="sp1_plot" format="png" from_work_dir="output/self_consistency/rep1/idr/idr_rep1_sp_idr.txt.png" label="${tool.name} on ${on_string}: replicate 1 self IDR plot" />
+        <data name="sp2_plot" format="png" from_work_dir="output/self_consistency/rep2/idr/idr_rep2_sp_idr.txt.png" label="${tool.name} on ${on_string}: replicate 2 self IDR plot" />
+        <data name="tr_log" format="txt" from_work_dir="output/true_replicates/idr/idr_tr_idr.log" label="${tool.name} on ${on_string}: true-replicate IDR log" />
+        <data name="pp_log" format="txt" from_work_dir="output/pooled_pseudoreplicates/idr/idr_pp_idr.log" label="${tool.name} on ${on_string}: pooled-pseudoreplicate IDR log" />
+        <data name="sp1_log" format="txt" from_work_dir="output/self_consistency/rep1/idr/idr_rep1_sp_idr.log" label="${tool.name} on ${on_string}: replicate 1 self IDR log" />
+        <data name="sp2_log" format="txt" from_work_dir="output/self_consistency/rep2/idr/idr_rep2_sp_idr.log" label="${tool.name} on ${on_string}: replicate 2 self IDR log" />
+        <data name="pipeline_log" format="txt" label="${tool.name} on ${on_string}: complete pipeline log" />
+        <collection name="macs_peaks" type="list" label="${tool.name} on ${on_string}: generated MACS2 narrowPeak files">
+            <discover_datasets pattern="(?P&lt;designation&gt;.*)_peaks\.narrowPeak" directory="output" recurse="true" ext="bed" visible="false" />
+        </collection>
+    </outputs>
+    <help><![CDATA[
+Evaluate ChIP-seq reproducibility for two biological replicates
+================================================================
+
+Provide two ChIP BAM files and their matched control BAM files. Choose BAMPE
+for paired-end data and BAM for single-end data. All files must refer to the
+same reference genome. In the accompanying PP script, pooled BAMs are
+concatenated after sequence-dictionary checks; coordinate sorting is not
+required. Pseudoreplicate assignment keeps the mates of each template together
+and produces approximately equal complementary halves.
+
+The tool executes:
+
+* **TR:** IDR between the two biological replicates (Nt).
+* **PP:** IDR between the two pooled pseudoreplicates (Np).
+* **SP:** IDR between the two self pseudoreplicates of each biological replicate
+  (N1 and N2).
+
+Existing narrowPeak files can replace peak calling in TR only. They must be in
+replicate order and have been generated using the same peak-calling parameters
+and preprocessing strategy as those selected here. BAM files remain required
+for PP and SP.
+
+The summary reports rescue_ratio = max(Nt, Np) / min(Nt, Np) and
+self_consistency_ratio = max(N1, N2) / min(N1, N2). A ratio is reported as NA
+when either corresponding count is zero. Counts include only peaks passing
+the selected global IDR threshold.
+
+IDR peak outputs use the tabular datatype because IDR adds columns to the
+standard narrowPeak fields. MACS2 narrowPeak files use the BED datatype in
+Galaxy. The narrowPeak collection contains the MACS2 peaks
+generated by this run: eight files in BAM-only mode, six when existing peaks
+are supplied. The supplied TR peaks remain in the history and are not copied
+into this collection.
+
+The branch manifest contains paths inside the job working directory; use the
+separate Galaxy output datasets to access those results after the job ends.
+The internal sample name is fixed to idr and replicate labels to rep1/rep2.
+Output labels identify the Galaxy input datasets.
+
+CPU allocation is obtained from GALAXY_SLOTS. MACS2 calls and branches currently
+run sequentially; the thread allocation applies to samtools.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1214/11-AOAS466</citation>
+        <citation type="doi">10.1186/gb-2008-9-9-r137</citation>
+        <citation type="doi">10.1093/gigascience/giab008</citation>
+    </citations>
+</tool>
