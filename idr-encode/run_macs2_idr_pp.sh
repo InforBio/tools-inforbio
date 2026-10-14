@@ -55,6 +55,7 @@ idr_rank="p.value"
 idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
+keep_tmp_dir="false"
 macs2_extra_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -76,6 +77,7 @@ while [[ $# -gt 0 ]]; do
         --idr-threshold) require_value "$@"; idr_threshold="$2"; shift 2 ;;
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
+        --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
@@ -87,6 +89,7 @@ done
 [[ -n "$output_dir" ]] || die "--output-dir is required"
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
+[[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
 
 case "$idr_rank" in
     signal.value) rank_column=7 ;;
@@ -106,8 +109,10 @@ done
 
 start_time=$(date +%s)
 mkdir -p "$output_dir/idr" "$output_dir/tmp"
-tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates.XXXXXX")
-trap 'rm -rf -- "$tmp_dir"' EXIT
+tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates")
+if [[ "${keep_tmp_dir:-false}" != "true" ]]; then
+    trap 'rm -rf -- "$tmp_dir"' EXIT
+fi
 
 check_sequence_dictionary_compatibility() {
     local bam1="$1"
@@ -189,8 +194,8 @@ samtools cat "$treatment_1" "$treatment_2" |
             -1 \
             --subsample-seed "$seed" \
             --subsample 0.5 \
-            -o "$treatment_00" \
-            -U "$treatment_01" \
+            --output "$treatment_00" \
+            --output-unselected "$treatment_01" \
             -
 
 samtools cat "$control_1" "$control_2" |
@@ -199,8 +204,8 @@ samtools cat "$control_1" "$control_2" |
             -1 \
             --subsample-seed "$((seed + 1))" \
             --subsample 0.5 \
-            -o "$control_00" \
-            -U "$control_01" \
+            --output "$control_00" \
+            --output-unselected "$control_01" \
             -
 
 echo "===> [$sample_name] Marking pooled pseudoreplicates as unsorted in BAM headers"

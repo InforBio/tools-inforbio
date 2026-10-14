@@ -57,6 +57,7 @@ cutoff_type="pvalue"
 cutoff_value="0.01"
 idr_rank="p.value"
 idr_threshold="0.05"
+keep_tmp_dir="false"
 macs2_extra_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -78,6 +79,7 @@ while [[ $# -gt 0 ]]; do
         --qvalue) require_value "$@"; cutoff_type="qvalue"; cutoff_value="$2"; shift 2 ;;
         --rank) require_value "$@"; idr_rank="$2"; shift 2 ;;
         --idr-threshold) require_value "$@"; idr_threshold="$2"; shift 2 ;;
+        --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
@@ -87,6 +89,8 @@ done
 [[ -n "$sample_name" ]] || die "--sample is required"
 [[ "$sample_name" =~ ^[A-Za-z0-9._-]+$ ]] || die "--sample may contain only letters, numbers, dots, underscores, and hyphens"
 [[ -n "$output_dir" ]] || die "--output-dir is required"
+[[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
+
 
 case "$idr_rank" in
     signal.value) rank_column=7 ;;
@@ -122,8 +126,16 @@ fi
 
 start_time=$(date +%s)
 mkdir -p "$output_dir/idr" "$output_dir/tmp"
-tmp_dir=$(mktemp -d "$output_dir/tmp/true-replicates.XXXXXX")
-trap 'rm -rf -- "$tmp_dir"' EXIT
+tmp_dir="$output_dir/tmp/true-replicates"
+
+mkdir -- "$tmp_dir" || {
+    printf 'ERROR: directory already exists or cannot be created: %s\n' \
+        "$tmp_dir" >&2
+    exit 1
+}
+if [[ "${keep_tmp_dir:-false}" != "true" ]]; then
+    trap 'rm -rf -- "$tmp_dir"' EXIT
+fi
 
 echo "========================================================================"
 echo "True-replicate IDR branch"

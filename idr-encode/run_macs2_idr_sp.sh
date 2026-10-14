@@ -56,6 +56,9 @@ idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
 macs2_extra_args=()
+#
+keep_tmp_dir="false"
+#
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -76,7 +79,10 @@ while [[ $# -gt 0 ]]; do
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
-        --help|-h) usage; exit 0 ;;
+        #
+        --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
+        #
+        --help|-h) usage; exit 0 ;;        
         *) die "unknown option: $1" ;;
     esac
 done
@@ -90,6 +96,7 @@ done
 [[ -n "$control_bam" && -f "$control_bam" ]] || die "control BAM not found: $control_bam"
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
+[[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
 
 case "$idr_rank" in
     signal.value) rank_column=7 ;;
@@ -105,8 +112,11 @@ done
 
 start_time=$(date +%s)
 mkdir -p "$output_dir/idr" "$output_dir/tmp"
-tmp_dir=$(mktemp -d "$output_dir/tmp/self-pseudoreplicates.XXXXXX")
-trap 'rm -rf -- "$tmp_dir"' EXIT
+
+tmp_dir=$(mktemp -d "$output_dir/tmp/self-pseudoreplicates")
+if [[ "${keep_tmp_dir:-false}" != "true" ]]; then
+    trap 'rm -rf -- "$tmp_dir"' EXIT
+fi
 
 comparison="${sample_name}_${replicate_label}"
 echo "========================================================================"
@@ -135,8 +145,8 @@ samtools view \
         -1 \
         --subsample-seed "$seed" \
         --subsample 0.5 \
-        -o "$treatment_00" \
-        -U "$treatment_01" \
+        --output "$treatment_00" \
+        --output-unselected "$treatment_01" \
         "$treatment_bam"
 
 samtools view \
@@ -144,8 +154,8 @@ samtools view \
         -1 \
         --subsample-seed "$((seed + 1))" \
         --subsample 0.5 \
-        -o "$control_00" \
-        -U "$control_01" \
+        --output "$control_00" \
+        --output-unselected "$control_01" \
         "$control_bam"
 
 samtools quickcheck -v \

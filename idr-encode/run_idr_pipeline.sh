@@ -73,6 +73,7 @@ idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
 macs2_extra_args=()
+keep_tmp_dir="false"
 
 ###### command line parsing ######
 
@@ -96,6 +97,7 @@ while [[ $# -gt 0 ]]; do # while there are still arguments to process
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
+        --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
     esac
@@ -116,6 +118,7 @@ done
 [[ ${#replicate_labels[@]} -eq 0 || ${#replicate_labels[@]} -eq 2 ]] || die "supply either zero or exactly two --replicate-label values"
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
+[[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
 
 
 #####################################
@@ -225,6 +228,7 @@ parameter_file="$output_dir/run_parameters.tsv"
     printf 'idr_threshold\t%s\n' "$idr_threshold"
     printf 'threads\t%s\n' "$threads"
     printf 'seed\t%s\n' "$seed"
+    printf 'keep_tmp_dir\t%s\n' "$keep_tmp_dir"
     if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
         for extra_arg in "${macs2_extra_args[@]}"; do
             printf 'macs2_extra_arg\t%s\n' "$extra_arg"
@@ -250,7 +254,10 @@ true_args=(
 if [[ "$input_mode" == "bam_and_narrowpeak" ]]; then
     true_args+=(--peak-1 "${narrowpeaks[0]}" --peak-2 "${narrowpeaks[1]}")
 fi
-if ! bash "$true_script" "${true_args[@]}"; then
+if ! bash "$true_script" \
+        "${true_args[@]}" \
+        --keep-tmp-dir "$keep_tmp_dir"
+then
     die "true-replicate branch failed"
 fi
 
@@ -262,7 +269,8 @@ if ! bash "$pooled_script" \
         --treatment-2 "${treatment_bams[1]}" \
         --control-2 "${control_bams[1]}" \
         --threads "$threads" \
-        --seed "$seed"
+        --seed "$seed" \
+        --keep-tmp-dir "$keep_tmp_dir"
 then
     die "pooled-pseudoreplicate branch failed"
 fi
@@ -276,7 +284,8 @@ for index in 0 1; do
             --treatment "${treatment_bams[$index]}" \
             --control "${control_bams[$index]}" \
             --threads "$threads" \
-            --seed "$((seed + index))"
+            --seed "$((seed + index))" \
+            --keep-tmp-dir "$keep_tmp_dir"
     then
         die "self-consistency branch failed for $label"
     fi
