@@ -1,0 +1,118 @@
+<tool id="chipr" name="ChIP-R" version="1.2.0+galaxy0" profile="23.0">
+    <description>identify reproducible peaks across replicates</description>
+    <requirements>
+        <requirement type="package" version="1.2.0">chip-r</requirement>
+    </requirements>
+    <version_command>python -c "from importlib.metadata import version; print(version('ChIP-R'))"</version_command>
+    <command detect_errors="exit_code"><![CDATA[
+#if len($peaks) < 2
+    echo 'ChIP-R requires at least two replicate peak files in this wrapper.' >&2; exit 1;
+#elif int($minentries) > len($peaks)
+    echo 'Minimum overlapping replicates must not exceed the number of input files.' >&2; exit 1;
+#else
+    chipr
+    --input
+    #for $peak in $peaks
+        '$peak'
+    #end for
+    --output chipr
+    --minentries $minentries
+    --rankmethod '$advanced.rankmethod'
+    --duphandling '$advanced.duphandling'
+    --seed $advanced.seed
+    --size $advanced.size
+    $advanced.fragment
+    > '$execution_log' 2>&1
+#end if
+    ]]></command>
+    <inputs>
+        <param name="peaks" type="data" format="encodepeak,bed,tabular" multiple="true" label="Peak files from biological replicates" help="Select at least two files on the same genome assembly, one per replicate. BED inputs must contain the 9 broadPeak or 10 narrowPeak columns; BED3/BED6 are not sufficient." />
+        <param argument="--minentries" type="integer" value="2" min="1" label="Minimum number of overlapping replicates" help="Must not exceed the number of files. The wrapper defaults to 2; the ChIP-R CLI defaults to 1." />
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param argument="--rankmethod" type="select" label="Rank peaks within each replicate by">
+                <option value="pvalue" selected="true">P-value (column 8)</option>
+                <option value="qvalue">Q-value (column 9)</option>
+                <option value="signalvalue">Signal value (column 7)</option>
+            </param>
+            <param argument="--duphandling" type="select" label="Handle equal ranks using">
+                <option value="average" selected="true">Average ranks</option>
+                <option value="random">Random ordering</option>
+            </param>
+            <param argument="--seed" type="float" value="0.5" min="0" max="1" label="Random seed" help="Used for random ordering of equal ranks." />
+            <param argument="--size" type="integer" value="20" min="1" label="Fallback minimum peak size (bp)" help="Used when reconnecting fragments without surrounding peaks; this is not a strict minimum size filter on all output peaks." />
+            <param argument="--fragment" type="boolean" truevalue="--fragment" falsevalue="" checked="false" label="Enable high fragmentation mode" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="optimal" format="tabular" from_work_dir="chipr_optimal.bed" label="${tool.name}: optimal reproducible peaks" />
+        <data name="all_peaks" format="tabular" from_work_dir="chipr_all.bed" label="${tool.name}: all peaks" />
+        <data name="summary" format="txt" from_work_dir="chipr_log.txt" label="${tool.name}: peak summary" />
+        <data name="execution_log" format="txt" label="${tool.name}: execution log" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="peaks" value="rep1.narrowPeak,rep2.narrowPeak" />
+            <param name="minentries" value="2" />
+            <output name="all_peaks">
+                <assert_contents>
+                    <has_text text="chr1" />
+                    <has_n_columns n="9" />
+                </assert_contents>
+            </output>
+            <output name="optimal"><assert_contents><has_n_columns n="9" /></assert_contents></output>
+            <output name="summary"><assert_contents><has_text text="Primary Peaks:" /></assert_contents></output>
+        </test>
+        <test>
+            <param name="peaks" value="rep1.narrowPeak,rep2.narrowPeak,rep3.narrowPeak" />
+            <param name="minentries" value="3" />
+            <section name="advanced">
+                <param name="rankmethod" value="signalvalue" />
+                <param name="duphandling" value="random" />
+                <param name="seed" value="0.25" />
+                <param name="fragment" value="true" />
+            </section>
+            <output name="all_peaks"><assert_contents><has_text text="chr1" /><has_n_columns n="9" /></assert_contents></output>
+            <output name="summary"><assert_contents><has_text text="Total Peaks:" /></assert_contents></output>
+        </test>
+    </tests>
+    <help><![CDATA[
+ChIP-R assesses peak reproducibility across ChIP-seq or ATAC-seq replicates
+using rank products, peak fragmentation and a binomial threshold.
+
+Inputs
+------
+Select at least two narrowPeak or broadPeak files, one per biological replicate,
+on the same genome assembly. Files labelled BED must still have the complete
+9 or 10 peak columns. Use a ranking column that contains meaningful values in
+every replicate; do not rank by p-value or q-value if that column is missing (-1).
+ENCODE narrowPeak/broadPeak p-value and q-value fields use -log10 values.
+This tool starts from called peaks, not BAM or FASTQ files.
+
+Outputs
+-------
+* Optimal peaks: primary peaks selected by the binomial threshold.
+* All peaks: primary and secondary peaks, sorted by significance.
+* Peak summary: peak counts and chromosome size statistics.
+* Execution log: stdout and stderr from ChIP-R.
+
+Both peak tables have 9 columns: chromosome, start, end, name, score,
+strand, signalValue, pValue and qValue. ChIP-R 1.2.0 writes raw probabilities
+in the last two columns. Outputs are deliberately typed as tabular: these
+columns are neither standard BED9 fields nor ENCODE -log10 peak scores.
+Coordinates retain BED's zero-based, half-open convention.
+
+Version-specific behavior
+-------------------------
+This wrapper targets ChIP-R 1.2.0. Its actual output names are ``prefix_all.bed``,
+``prefix_optimal.bed`` and ``prefix_log.txt``, rather than the tier names in the upstream README.
+The CLI accepts --alpha, but the implementation does not use it to select
+primary peaks. It is therefore not exposed here. The optimal output uses
+the binomial threshold, not a user-specified alpha/FDR cutoff.
+
+The wrapper defaults to two overlapping replicates; choose a higher value
+when a stricter overlap requirement is needed.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1101/2020.11.24.396960</citation>
+    </citations>
+</tool>
