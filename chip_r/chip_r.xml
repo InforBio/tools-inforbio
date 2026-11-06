@@ -51,28 +51,30 @@
     </outputs>
     <tests>
         <test>
-            <param name="peaks" value="rep1.narrowPeak,rep2.narrowPeak" />
+            <param name="peaks"
+                value="testInput1.broadpeak,testInput2.broadpeak" />
             <param name="minentries" value="2" />
-            <output name="all_peaks">
-                <assert_contents>
-                    <has_text text="chr1" />
-                    <has_n_columns n="9" />
-                </assert_contents>
-            </output>
-            <output name="optimal"><assert_contents><has_n_columns n="9" /></assert_contents></output>
-            <output name="summary"><assert_contents><has_text text="Primary Peaks:" /></assert_contents></output>
+
+            <output name="all_peaks" file="output_test1_all.bed" compare="diff" />
+            <output name="optimal" file="output_test1_optimal.bed" compare="diff" />
+            <output name="summary" file="output_test1_log.txt" compare="diff" />
         </test>
+
         <test>
-            <param name="peaks" value="rep1.narrowPeak,rep2.narrowPeak,rep3.narrowPeak" />
+            <param name="peaks"
+                value="testInput1.broadpeak,testInput2.broadpeak,testInput3.broadpeak" />
             <param name="minentries" value="3" />
+
             <section name="advanced">
                 <param name="rankmethod" value="signalvalue" />
                 <param name="duphandling" value="random" />
                 <param name="seed" value="0.25" />
                 <param name="fragment" value="true" />
             </section>
-            <output name="all_peaks"><assert_contents><has_text text="chr1" /><has_n_columns n="9" /></assert_contents></output>
-            <output name="summary"><assert_contents><has_text text="Total Peaks:" /></assert_contents></output>
+
+            <output name="all_peaks" file="output_test2_all.bed" compare="diff" />
+            <output name="optimal" file="output_test2_optimal.bed" compare="diff" />
+            <output name="summary" file="output_test2_log.txt" compare="diff" />
         </test>
     </tests>
     <help><![CDATA[
