@@ -1,11 +1,11 @@
 <tool id="idr_encode" name="ChIP-seq reproducibility" version="0.1.0" profile="23.0">
     <description>with true, pooled and self pseudoreplicate IDR</description>
     <requirements>
-        <requirement type="package" version="2.2.9.1">macs2</requirement>
+        <requirement type="package" version="3.10">python</requirement>
+        <requirement type="package" version="2.2.7.1">macs2</requirement>
         <requirement type="package" version="2.0.4.2">idr</requirement>
-        <requirement type="package" version="1.21">samtools</requirement>
-        <!-- IDR uses np.int; the Bioconda IDR recipe requires numpy &lt; 1.20. -->
-        <requirement type="package" version="1.19.5">numpy</requirement>
+        <requirement type="package" version="1.24">samtools</requirement>
+        <requirement type="package" version="1.23.5">numpy</requirement>
     </requirements>
     <version_command><![CDATA[
 macs2 --version && idr --version && samtools --version
@@ -118,6 +118,353 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
             <discover_datasets pattern="(?P&lt;designation&gt;.*)_peaks\.narrowPeak" directory="output" recurse="true" ext="bed" visible="false" />
         </collection>
     </outputs>
+    <tests>
+        <!-- Test 1 : BAM uniquement -->
+        <test expect_num_outputs="17">
+            <param name="treatment_1"
+                value="inputs/testInput_treatment_rep1.bam"
+                ftype="bam" />
+            <param name="treatment_2"
+                value="inputs/testInput_treatment_rep2.bam"
+                ftype="bam" />
+            <param name="control_1"
+                value="inputs/testInput_control_rep1.bam"
+                ftype="bam" />
+            <param name="control_2"
+                value="inputs/testInput_control_rep2.bam"
+                ftype="bam" />
+
+            <conditional name="peak_input">
+                <param name="mode" value="call" />
+            </conditional>
+
+            <section name="macs_options">
+                <param name="input_format" value="BAMPE" />
+                <param name="genome_size" value="1.87e9" />
+                <param name="bandwidth" value="300" />
+                <param name="mfold_low" value="2" />
+                <param name="mfold_high" value="50" />
+
+                <conditional name="cutoff">
+                    <param name="kind" value="pvalue" />
+                    <param name="value" value="0.01" />
+                </conditional>
+
+                <param name="nomodel" value="false" />
+                <param name="keep_dup" value="1" />
+            </section>
+
+            <section name="idr_options">
+                <param name="rank" value="p.value" />
+                <param name="threshold" value="0.05" />
+                <param name="seed" value="0" />
+            </section>
+
+            <output
+                name="summary"
+                file="outputs_bam_only/testOutput01_summary.tabular"
+                ftype="tabular" />
+
+            <!-- Les chemins des BAM varient dans Galaxy : assertions ciblées. -->
+            <output name="parameters" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="22" />
+                    <has_line line="sample&#009;idr" />
+                    <has_line line="input_mode&#009;bam_only" />
+                    <has_line line="macs2_format&#009;BAMPE" />
+                    <has_line line="idr_threshold&#009;0.050000000000" />
+                    <has_line line="macs2_extra_arg&#009;--keep-dup" />
+                    <has_line line="macs2_extra_arg&#009;1" />
+                </assert_contents>
+            </output>
+
+            <!-- Les chemins des résultats varient également. -->
+            <output name="manifest" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="5" />
+                    <has_text text="true_replicates&#009;rep1_vs_rep2" />
+                    <has_text text="pooled_pseudoreplicates&#009;pooled" />
+                    <has_text text="self_consistency&#009;rep1" />
+                    <has_text text="self_consistency&#009;rep2" />
+                </assert_contents>
+            </output>
+
+            <output
+                name="tr_idr"
+                file="outputs_bam_only/testOutput04_tr_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="pp_idr"
+                file="outputs_bam_only/testOutput05_pp_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="sp1_idr"
+                file="outputs_bam_only/testOutput06_sp1_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="sp2_idr"
+                file="outputs_bam_only/testOutput07_sp2_idr.tabular"
+                ftype="tabular" />
+
+            <!-- Comparaison par taille pour éviter une comparaison PNG binaire. -->
+            <output
+                name="tr_plot"
+                file="outputs_bam_only/testOutput08_tr_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="pp_plot"
+                file="outputs_bam_only/testOutput09_pp_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="sp1_plot"
+                file="outputs_bam_only/testOutput10_sp1_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="sp2_plot"
+                file="outputs_bam_only/testOutput11_sp2_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+
+            <output
+                name="tr_log"
+                file="outputs_bam_only/testOutput12_tr_log.txt"
+                ftype="txt" />
+            <output
+                name="pp_log"
+                file="outputs_bam_only/testOutput13_pp_log.txt"
+                ftype="txt" />
+            <output
+                name="sp1_log"
+                file="outputs_bam_only/testOutput14_sp1_log.txt"
+                ftype="txt" />
+            <output
+                name="sp2_log"
+                file="outputs_bam_only/testOutput15_sp2_log.txt"
+                ftype="txt" />
+
+            <!-- Le log contient des dates et des chemins temporaires. -->
+            <output name="pipeline_log" ftype="txt">
+                <assert_contents>
+                    <has_text text="Input mode: bam_only" />
+                    <has_text text="[OK] All IDR branches completed" />
+                </assert_contents>
+            </output>
+
+            <output_collection name="macs_peaks" type="list" count="8">
+                <element
+                    name="idr.pooledR00"
+                    file="outputs_bam_only/testOutputCollection03_pp_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr.pooledR01"
+                    file="outputs_bam_only/testOutputCollection04_pp_R01.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep1.selfR00"
+                    file="outputs_bam_only/testOutputCollection05_sp1_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep1.selfR01"
+                    file="outputs_bam_only/testOutputCollection06_sp1_R01.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep2.selfR00"
+                    file="outputs_bam_only/testOutputCollection07_sp2_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep2.selfR01"
+                    file="outputs_bam_only/testOutputCollection08_sp2_R01.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep1"
+                    file="outputs_bam_only/testOutputCollection01_tr_rep1.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep2"
+                    file="outputs_bam_only/testOutputCollection02_tr_rep2.narrowPeak"
+                    ftype="bed" />
+            </output_collection>
+        </test>
+
+        <!-- Test 2 : BAM + narrowPeak -->
+        <test expect_num_outputs="17">
+            <param name="treatment_1"
+                value="inputs/testInput_treatment_rep1.bam"
+                ftype="bam" />
+            <param name="treatment_2"
+                value="inputs/testInput_treatment_rep2.bam"
+                ftype="bam" />
+            <param name="control_1"
+                value="inputs/testInput_control_rep1.bam"
+                ftype="bam" />
+            <param name="control_2"
+                value="inputs/testInput_control_rep2.bam"
+                ftype="bam" />
+
+            <conditional name="peak_input">
+                <param name="mode" value="existing" />
+                <param
+                    name="peak_1"
+                    value="inputs/testInput_rep1.narrowPeak"
+                    ftype="bed" />
+                <param
+                    name="peak_2"
+                    value="inputs/testInput_rep2.narrowPeak"
+                    ftype="bed" />
+            </conditional>
+
+            <section name="macs_options">
+                <param name="input_format" value="BAMPE" />
+                <param name="genome_size" value="1.87e9" />
+                <param name="bandwidth" value="300" />
+                <param name="mfold_low" value="2" />
+                <param name="mfold_high" value="50" />
+
+                <conditional name="cutoff">
+                    <param name="kind" value="pvalue" />
+                    <param name="value" value="0.01" />
+                </conditional>
+
+                <param name="nomodel" value="false" />
+                <param name="keep_dup" value="1" />
+            </section>
+
+            <section name="idr_options">
+                <param name="rank" value="p.value" />
+                <param name="threshold" value="0.05" />
+                <param name="seed" value="0" />
+            </section>
+
+            <output
+                name="summary"
+                file="outputs_bam_narrowpeak/testOutput01_summary.tabular"
+                ftype="tabular" />
+
+            <output name="parameters" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="24" />
+                    <has_line line="sample&#009;idr" />
+                    <has_line line="input_mode&#009;bam_and_narrowpeak" />
+                    <has_text text="narrowpeak_1&#009;" />
+                    <has_text text="narrowpeak_2&#009;" />
+                    <has_line line="macs2_format&#009;BAMPE" />
+                    <has_line line="idr_threshold&#009;0.050000000000" />
+                    <has_line line="macs2_extra_arg&#009;--keep-dup" />
+                    <has_line line="macs2_extra_arg&#009;1" />
+                </assert_contents>
+            </output>
+
+            <output name="manifest" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="5" />
+                    <has_text text="true_replicates&#009;rep1_vs_rep2" />
+                    <has_text text="pooled_pseudoreplicates&#009;pooled" />
+                    <has_text text="self_consistency&#009;rep1" />
+                    <has_text text="self_consistency&#009;rep2" />
+                </assert_contents>
+            </output>
+
+            <output
+                name="tr_idr"
+                file="outputs_bam_narrowpeak/testOutput04_tr_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="pp_idr"
+                file="outputs_bam_narrowpeak/testOutput05_pp_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="sp1_idr"
+                file="outputs_bam_narrowpeak/testOutput06_sp1_idr.tabular"
+                ftype="tabular" />
+            <output
+                name="sp2_idr"
+                file="outputs_bam_narrowpeak/testOutput07_sp2_idr.tabular"
+                ftype="tabular" />
+
+            <output
+                name="tr_plot"
+                file="outputs_bam_narrowpeak/testOutput08_tr_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="pp_plot"
+                file="outputs_bam_narrowpeak/testOutput09_pp_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="sp1_plot"
+                file="outputs_bam_narrowpeak/testOutput10_sp1_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+            <output
+                name="sp2_plot"
+                file="outputs_bam_narrowpeak/testOutput11_sp2_plot.png"
+                ftype="png"
+                compare="sim_size"
+                delta="5000" />
+
+            <output
+                name="tr_log"
+                file="outputs_bam_narrowpeak/testOutput12_tr_log.txt"
+                ftype="txt" />
+            <output
+                name="pp_log"
+                file="outputs_bam_narrowpeak/testOutput13_pp_log.txt"
+                ftype="txt" />
+            <output
+                name="sp1_log"
+                file="outputs_bam_narrowpeak/testOutput14_sp1_log.txt"
+                ftype="txt" />
+            <output
+                name="sp2_log"
+                file="outputs_bam_narrowpeak/testOutput15_sp2_log.txt"
+                ftype="txt" />
+
+            <output name="pipeline_log" ftype="txt">
+                <assert_contents>
+                    <has_text text="Input mode: bam_and_narrowpeak" />
+                    <has_text text="[OK] All IDR branches completed" />
+                </assert_contents>
+            </output>
+
+            <output_collection name="macs_peaks" type="list" count="6">
+                <element
+                    name="idr.pooledR00"
+                    file="outputs_bam_narrowpeak/testOutputCollection01_pp_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr.pooledR01"
+                    file="outputs_bam_narrowpeak/testOutputCollection02_pp_R01.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep1.selfR00"
+                    file="outputs_bam_narrowpeak/testOutputCollection03_sp1_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep1.selfR01"
+                    file="outputs_bam_narrowpeak/testOutputCollection04_sp1_R01.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep2.selfR00"
+                    file="outputs_bam_narrowpeak/testOutputCollection05_sp2_R00.narrowPeak"
+                    ftype="bed" />
+                <element
+                    name="idr_rep2.selfR01"
+                    file="outputs_bam_narrowpeak/testOutputCollection06_sp2_R01.narrowPeak"
+                    ftype="bed" />
+            </output_collection>
+        </test>
+    </tests>
     <help><![CDATA[
 Evaluate ChIP-seq reproducibility for two biological replicates
 ================================================================

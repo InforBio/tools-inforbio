@@ -1,0 +1,2 @@
+sample	replicate_1	replicate_2	idr_threshold	Nt	Np	N1	N2	rescue_ratio	self_consistency_ratio
+idr	rep1	rep2	0.050000000000	63	84	72	66	1.333333	1.090909

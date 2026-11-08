@@ -1,0 +1,347 @@
+========================================================================
+Complete IDR pipeline
+Sample: idr
+Input mode: bam_and_narrowpeak
+Output directory: test4galaxy/_staging/bam_narrowpeak
+========================================================================
+========================================================================
+True-replicate IDR branch
+Sample: idr
+Input mode: BAM + narrowPeak
+Start time: Sun Nov  8 20:40:32 CET 2026
+========================================================================
+===> [idr] IDR analysis for true replicates
+[OK] True-replicate branch completed in 00:00:02
+IDR output: test4galaxy/_staging/bam_narrowpeak/true_replicates/idr/idr_tr_idr.txt
+========================================================================
+Pooled-pseudoreplicate IDR branch
+Sample: idr
+Start time: Sun Nov  8 20:40:34 CET 2026
+========================================================================
+===> [idr] Pooling and splitting treatment and control BAMs
+===> [idr] Checking BAM sequence dictionary compatibility
+===> [idr] Creating pooled treatment pseudoreplicates
+===> [idr] Marking pooled pseudoreplicates as unsorted in BAM headers
+===> [idr] MACS2 peak calling on pooled pseudoreplicate 00
+INFO  @ Sun, 08 Nov 2026 20:40:35: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.treatment.pooled.00.bam -c test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.control.pooled.00.bam --outdir test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates --name idr.pooledR00 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9 --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr.pooledR00
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.treatment.pooled.00.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.control.pooled.00.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:35: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:35: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:35: 42049 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:35: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: 32553 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 mean fragment size is determined as 204.9 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 note: mean fragment size in control is 193.4 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 fragment size = 204.9 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  total fragments in treatment: 42049 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  fragments after filtering in treatment: 42044 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  total fragments in control: 32553 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  fragments after filtering in control: 32551 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR00_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR00_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR00_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:36: Done! 
+===> [idr] MACS2 peak calling on pooled pseudoreplicate 01
+INFO  @ Sun, 08 Nov 2026 20:40:36: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.treatment.pooled.01.bam -c test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.control.pooled.01.bam --outdir test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates --name idr.pooledR01 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9 --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr.pooledR01
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.treatment.pooled.01.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/tmp/pooled-pseudoreplicates.J4EiE9/idr.control.pooled.01.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:36: 41740 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:36: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: 32374 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 mean fragment size is determined as 205.4 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 note: mean fragment size in control is 192.7 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 fragment size = 205.4 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  total fragments in treatment: 41740 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  fragments after filtering in treatment: 41734 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  total fragments in control: 32374 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  fragments after filtering in control: 32373 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR01_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR01_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:37: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr.pooledR01_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:37: Done! 
+===> [idr] IDR analysis for pooled pseudoreplicates
+[OK] Pooled-pseudoreplicate branch completed in 00:00:05
+IDR output: test4galaxy/_staging/bam_narrowpeak/pooled_pseudoreplicates/idr/idr_pp_idr.txt
+========================================================================
+Self-consistency IDR branch
+Sample: idr
+Replicate: rep1
+Start time: Sun Nov  8 20:40:39 CET 2026
+========================================================================
+===> [idr_rep1] Creating treatment and control pseudoreplicates
+===> [idr_rep1] MACS2 peak calling on self pseudoreplicate 00
+INFO  @ Sun, 08 Nov 2026 20:40:39: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.treatment.00.bam -c test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.control.00.bam --outdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1 --name idr_rep1.selfR00 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr_rep1.selfR00
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.treatment.00.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.control.00.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:39: 20769 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:39: 18039 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 mean fragment size is determined as 203.7 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 note: mean fragment size in control is 185.3 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 fragment size = 203.7 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1  total fragments in treatment: 20769 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:39: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  fragments after filtering in treatment: 20769 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  total fragments in control: 18039 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  fragments after filtering in control: 18039 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR00_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR00_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR00_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:40: Done! 
+===> [idr_rep1] MACS2 peak calling on self pseudoreplicate 01
+INFO  @ Sun, 08 Nov 2026 20:40:40: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.treatment.01.bam -c test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.control.01.bam --outdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1 --name idr_rep1.selfR01 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr_rep1.selfR01
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.treatment.01.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/tmp/self-pseudoreplicates.wvnByu/idr_rep1.control.01.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: 20597 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: 18257 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 mean fragment size is determined as 204.1 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 note: mean fragment size in control is 184.8 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 fragment size = 204.1 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  total fragments in treatment: 20597 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  fragments after filtering in treatment: 20597 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  total fragments in control: 18257 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  fragments after filtering in control: 18257 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR01_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR01_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:40: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr_rep1.selfR01_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:40: Done! 
+===> [idr_rep1] IDR self-consistency analysis
+[OK] Self-consistency branch completed in 00:00:03
+IDR output: test4galaxy/_staging/bam_narrowpeak/self_consistency/rep1/idr/idr_rep1_sp_idr.txt
+========================================================================
+Self-consistency IDR branch
+Sample: idr
+Replicate: rep2
+Start time: Sun Nov  8 20:40:42 CET 2026
+========================================================================
+===> [idr_rep2] Creating treatment and control pseudoreplicates
+===> [idr_rep2] MACS2 peak calling on self pseudoreplicate 00
+INFO  @ Sun, 08 Nov 2026 20:40:43: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.treatment.00.bam -c test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.control.00.bam --outdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2 --name idr_rep2.selfR00 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr_rep2.selfR00
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.treatment.00.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.control.00.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: 21010 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: 14286 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 mean fragment size is determined as 206.1 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 note: mean fragment size in control is 203.5 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 fragment size = 206.1 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  total fragments in treatment: 21010 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  fragments after filtering in treatment: 21010 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  total fragments in control: 14286 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  fragments after filtering in control: 14286 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR00_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR00_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR00_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:43: Done! 
+===> [idr_rep2] MACS2 peak calling on self pseudoreplicate 01
+INFO  @ Sun, 08 Nov 2026 20:40:43: 
+# Command line: callpeak -t test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.treatment.01.bam -c test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.control.01.bam --outdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2 --name idr_rep2.selfR01 --format BAMPE --gsize 1.87e9 --bw 300 --mfold 2 50 --pvalue 0.01 --tempdir test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt --keep-dup 1
+# ARGUMENTS LIST:
+# name = idr_rep2.selfR01
+# format = BAMPE
+# ChIP-seq file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.treatment.01.bam']
+# control file = ['test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/tmp/self-pseudoreplicates.fnynBt/idr_rep2.control.01.bam']
+# effective genome size = 1.87e+09
+# band width = 300
+# model fold = [2, 50]
+# pvalue cutoff = 1.00e-02
+# qvalue will not be calculated and reported as -1 in the final output.
+# The maximum gap between significant sites is assigned as the read length/tag size.
+# The minimum length of peaks is assigned as the predicted fragment length "d".
+# Larger dataset will be scaled towards smaller dataset.
+# Range for calculating regional lambda is: 1000 bps and 10000 bps
+# Broad region calling is off
+# Paired-End mode is on
+ 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 read fragment files... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 read treatment fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: 21413 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1.2 read input fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: 14345 fragments have been read. 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 mean fragment size is determined as 206.6 bp from treatment 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 note: mean fragment size in control is 202.7 bp -- value ignored 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 fragment size = 206.6 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1  total fragments in treatment: 21413 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:43: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1  fragments after filtering in treatment: 21413 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1  Redundant rate of treatment: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1  total fragments in control: 14345 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1 user defined the maximum fragments... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1 filter out redundant fragments by allowing at most 1 identical fragment(s) 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1  fragments after filtering in control: 14345 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1  Redundant rate of control: 0.00 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #1 finished! 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #2 Build Peak Model... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #2 Skipped... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #3 Call peaks... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #3 Call peaks with given -log10pvalue cutoff: 2.00000 ... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #3 Pre-compute pvalue-qvalue table... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #3 Call peaks for each chromosome... 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #4 Write output xls file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR01_peaks.xls 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #4 Write peak in narrowPeak format file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR01_peaks.narrowPeak 
+INFO  @ Sun, 08 Nov 2026 20:40:44: #4 Write summits bed file... test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr_rep2.selfR01_summits.bed 
+INFO  @ Sun, 08 Nov 2026 20:40:44: Done! 
+===> [idr_rep2] IDR self-consistency analysis
+[OK] Self-consistency branch completed in 00:00:04
+IDR output: test4galaxy/_staging/bam_narrowpeak/self_consistency/rep2/idr/idr_rep2_sp_idr.txt
+========================================================================
+[OK] All IDR branches completed
+Result manifest: test4galaxy/_staging/bam_narrowpeak/idr_results.tsv
+IDR summary: test4galaxy/_staging/bam_narrowpeak/idr_summary.tsv
+Run parameters: test4galaxy/_staging/bam_narrowpeak/run_parameters.tsv
+========================================================================

@@ -1,0 +1,5 @@
+branch	comparison	idr_result
+true_replicates	rep1_vs_rep2	test4galaxy/_staging/bam_only/true_replicates/idr/idr_tr_idr.txt
+pooled_pseudoreplicates	pooled	test4galaxy/_staging/bam_only/pooled_pseudoreplicates/idr/idr_pp_idr.txt
+self_consistency	rep1	test4galaxy/_staging/bam_only/self_consistency/rep1/idr/idr_rep1_sp_idr.txt
+self_consistency	rep2	test4galaxy/_staging/bam_only/self_consistency/rep2/idr/idr_rep2_sp_idr.txt

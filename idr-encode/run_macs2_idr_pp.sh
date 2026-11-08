@@ -109,7 +109,7 @@ done
 
 start_time=$(date +%s)
 mkdir -p "$output_dir/idr" "$output_dir/tmp"
-tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates")
+tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates.XXXXXX")
 if [[ "${keep_tmp_dir:-false}" != "true" ]]; then
     trap 'rm -rf -- "$tmp_dir"' EXIT
 fi
