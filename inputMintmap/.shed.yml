@@ -1,0 +1,12 @@
+name: mintmap_input_generator
+owner: inforbio
+description: Generate lookup and tRF type files required by MINTmap
+long_description: >-
+  Galaxy wrapper for generating the lookup table and tRNA-derived fragment
+  type annotations required to run MINTmap from genome and tRNA reference
+  files.
+homepage_url: https://github.com/InforBio/tools_inforbio/tree/main/inputMintmap
+remote_repository_url: https://github.com/InforBio/tools_inforbio/tree/main/inputMintmap
+categories:
+  - RNA
+  - Fasta Manipulation

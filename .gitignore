@@ -1,4 +1,10 @@
+## Local Planemo configuration
+.planemo.yml
+
+## Generated Planemo test reports
+**/tool_test_output.html
+**/tool_test_output.json
+
+## Local/generated files
 idr-encode/test_data
-chip_r/tool_test_output.html
-chip_r/tool_test_output.json
 .DS_Store

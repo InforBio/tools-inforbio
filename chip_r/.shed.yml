@@ -1,18 +1,15 @@
 name: chipr
 owner: inforbio
 description: Galaxy wrapper for ChIP-r
-long_description: |
+long_description: >-
   Galaxy wrapper for ChIP-R, which uses rank product analysis to identify
   reproducible peaks across multiple ChIP-seq replicates. Input peak files
   follow the ENCODE narrowPeak or broadPeak format.
-
 homepage_url: https://github.com/rhysnewell/ChIP-R
-remote_repository_url: https://github.com/ton_compte/ton_depot/tree/main/ton_outil
-
+remote_repository_url: https://github.com/InforBio/tools_inforbio/tree/main/chip_r
 type: unrestricted
 categories:
   - ChIP-seq
-
 include:
   - chip_r.xml
   - test-data/*

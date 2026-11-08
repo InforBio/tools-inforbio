@@ -1,0 +1,17 @@
+## Planemo configuration template.
+## Copy this file to .planemo.yml and replace the placeholders locally.
+
+shed_username: "jueda"
+sheds:
+  toolshed:
+    key: "<TOOLS_HED_API_KEY>"
+    # email: "<TOOLS_HED_EMAIL>"
+    # password: "<TOOLS_HED_PASSWORD>"
+  testtoolshed:
+    key: "<TEST_TOOLS_HED_API_KEY>"
+    # email: "<TEST_TOOLS_HED_EMAIL>"
+    # password: "<TEST_TOOLS_HED_PASSWORD>"
+  local:
+    # key: "<LOCAL_TOOLS_HED_API_KEY>"
+    # email: "<LOCAL_TOOLS_HED_EMAIL>"
+    # password: "<LOCAL_TOOLS_HED_PASSWORD>"

@@ -1,0 +1,12 @@
+name: mintmap
+owner: inforbio
+description: Identify and quantify tRNA-derived fragments from small RNA-seq data
+long_description: >-
+  Galaxy wrapper for MINTmap, which identifies and quantifies tRNA-derived
+  fragments (tRFs) from small RNA sequencing datasets and reports exclusive
+  and ambiguous tRF expression profiles.
+homepage_url: https://github.com/TJU-CMC-Org/MINTmap
+remote_repository_url: https://github.com/InforBio/tools_inforbio/tree/main/mintmap
+categories:
+  - RNA
+  - Transcriptomics
