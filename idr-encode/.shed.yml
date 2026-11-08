@@ -1,0 +1,11 @@
+name: idr_encode
+owner: inforbio
+description: ENCODE-style ChIP-seq reproducibility analysis with IDR
+long_description: >-
+  Galaxy wrapper for evaluating ChIP-seq reproducibility between biological
+  replicates, pooled pseudoreplicates, and self-pseudoreplicates using MACS2
+  and IDR.
+homepage_url: https://github.com/InforBio/tools_inforbio/tree/main/idr-encode
+remote_repository_url: https://github.com/InforBio/tools_inforbio/tree/main/idr-encode
+categories:
+  - ChIP-seq
