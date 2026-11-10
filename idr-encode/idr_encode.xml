@@ -474,18 +474,19 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
                     ftype="bed" />
             </output_collection>
             <output_collection name="pseudo_replicate_bam" type="list" count="12">
-                <element name="idr.treatment.pooled.00" ftype="bam" />
-                <element name="idr.treatment.pooled.01" ftype="bam" />
+                <!-- Match the filename order used by dataset discovery. -->
                 <element name="idr.control.pooled.00" ftype="bam" />
                 <element name="idr.control.pooled.01" ftype="bam" />
-                <element name="idr_rep1.treatment.00" ftype="bam" />
-                <element name="idr_rep1.treatment.01" ftype="bam" />
+                <element name="idr.treatment.pooled.00" ftype="bam" />
+                <element name="idr.treatment.pooled.01" ftype="bam" />
                 <element name="idr_rep1.control.00" ftype="bam" />
                 <element name="idr_rep1.control.01" ftype="bam" />
-                <element name="idr_rep2.treatment.00" ftype="bam" />
-                <element name="idr_rep2.treatment.01" ftype="bam" />
+                <element name="idr_rep1.treatment.00" ftype="bam" />
+                <element name="idr_rep1.treatment.01" ftype="bam" />
                 <element name="idr_rep2.control.00" ftype="bam" />
                 <element name="idr_rep2.control.01" ftype="bam" />
+                <element name="idr_rep2.treatment.00" ftype="bam" />
+                <element name="idr_rep2.treatment.01" ftype="bam" />
             </output_collection>
         </test>
     </tests>
