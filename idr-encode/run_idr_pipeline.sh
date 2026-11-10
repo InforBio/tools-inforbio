@@ -39,8 +39,9 @@ Other options:
   --idr-threshold P           Global IDR cutoff used to retain/count peaks [0.05]
   --threads N                 samtools threads [GALAXY_SLOTS or 1]
   --seed N                    pseudo-replicate assignment seed [0]
-  --write_pr_bam BOOL          retain treatment/control pseudoreplicate BAMs
-                              in DIR/pseudo_replicate_bam/ [false]
+  --write_pr_bam BOOL          retain coordinate-sorted pseudoreplicate BAMs
+                              and .bam.bai indexes in DIR/pseudo_replicate_bam/
+                              [false]
 EOF
 }
 
@@ -364,6 +365,6 @@ echo "Result manifest: $results_file"
 echo "IDR summary: $summary_file"
 echo "Run parameters: $parameter_file"
 if [[ "$write_pr_bam" == "true" ]]; then
-    echo "Pseudoreplicate BAMs: $output_dir/pseudo_replicate_bam"
+    echo "Sorted pseudoreplicate BAMs and indexes: $output_dir/pseudo_replicate_bam"
 fi
 echo "========================================================================"
