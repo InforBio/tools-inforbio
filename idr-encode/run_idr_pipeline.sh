@@ -39,6 +39,8 @@ Other options:
   --idr-threshold P           Global IDR cutoff used to retain/count peaks [0.05]
   --threads N                 samtools threads [GALAXY_SLOTS or 1]
   --seed N                    pseudo-replicate assignment seed [0]
+  --write_pr_bam BOOL          retain treatment/control pseudoreplicate BAMs
+                              in DIR/pseudo_replicate_bam/ [false]
 EOF
 }
 
@@ -74,6 +76,7 @@ threads="${GALAXY_SLOTS:-1}"
 seed="0"
 macs2_extra_args=()
 keep_tmp_dir="false"
+write_pr_bam="false"
 
 ###### command line parsing ######
 
@@ -98,6 +101,7 @@ while [[ $# -gt 0 ]]; do # while there are still arguments to process
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
+        --write_pr_bam) require_value "$@"; write_pr_bam="$2"; shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
     esac
@@ -119,6 +123,7 @@ done
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
 [[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
+[[ "$write_pr_bam" == "true" || "$write_pr_bam" == "false" ]] || die "--write_pr_bam must be true or false"
 
 
 #####################################
@@ -229,6 +234,7 @@ parameter_file="$output_dir/run_parameters.tsv"
     printf 'threads\t%s\n' "$threads"
     printf 'seed\t%s\n' "$seed"
     printf 'keep_tmp_dir\t%s\n' "$keep_tmp_dir"
+    printf 'write_pr_bam\t%s\n' "$write_pr_bam"
     if [[ ${#macs2_extra_args[@]} -gt 0 ]]; then
         for extra_arg in "${macs2_extra_args[@]}"; do
             printf 'macs2_extra_arg\t%s\n' "$extra_arg"
@@ -270,6 +276,8 @@ if ! bash "$pooled_script" \
         --control-2 "${control_bams[1]}" \
         --threads "$threads" \
         --seed "$seed" \
+        --write_pr_bam "$write_pr_bam" \
+        --pr-bam-dir "$output_dir/pseudo_replicate_bam" \
         --keep-tmp-dir "$keep_tmp_dir"
 then
     die "pooled-pseudoreplicate branch failed"
@@ -285,6 +293,8 @@ for index in 0 1; do
             --control "${control_bams[$index]}" \
             --threads "$threads" \
             --seed "$((seed + index))" \
+            --write_pr_bam "$write_pr_bam" \
+            --pr-bam-dir "$output_dir/pseudo_replicate_bam" \
             --keep-tmp-dir "$keep_tmp_dir"
     then
         die "self-consistency branch failed for $label"
@@ -353,4 +363,7 @@ echo "[OK] All IDR branches completed"
 echo "Result manifest: $results_file"
 echo "IDR summary: $summary_file"
 echo "Run parameters: $parameter_file"
+if [[ "$write_pr_bam" == "true" ]]; then
+    echo "Pseudoreplicate BAMs: $output_dir/pseudo_replicate_bam"
+fi
 echo "========================================================================"

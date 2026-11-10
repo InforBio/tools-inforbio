@@ -26,6 +26,8 @@ Other options:
   --idr-threshold P           Global IDR cutoff used to retain peaks [0.05]
   --threads N                 samtools threads [1]
   --seed N                    treatment template-subsampling seed [0]
+  --write_pr_bam BOOL          retain treatment/control pseudoreplicate BAMs [false]
+  --pr-bam-dir DIR             retained BAM directory [OUTPUT_DIR/pseudo_replicate_bam]
 EOF
 }
 
@@ -58,6 +60,8 @@ seed="0"
 macs2_extra_args=()
 #
 keep_tmp_dir="false"
+write_pr_bam="false"
+pr_bam_dir=""
 #
 
 while [[ $# -gt 0 ]]; do
@@ -81,6 +85,8 @@ while [[ $# -gt 0 ]]; do
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         #
         --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
+        --write_pr_bam) require_value "$@"; write_pr_bam="$2"; shift 2 ;;
+        --pr-bam-dir) require_value "$@"; pr_bam_dir="$2"; shift 2 ;;
         #
         --help|-h) usage; exit 0 ;;        
         *) die "unknown option: $1" ;;
@@ -97,6 +103,7 @@ done
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
 [[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
+[[ "$write_pr_bam" == "true" || "$write_pr_bam" == "false" ]] || die "--write_pr_bam must be true or false"
 
 case "$idr_rank" in
     signal.value) rank_column=7 ;;
@@ -126,10 +133,17 @@ echo "Replicate: $replicate_label"
 echo "Start time: $(date)"
 echo "========================================================================"
 
-treatment_00="$tmp_dir/${comparison}.treatment.00.bam"
-treatment_01="$tmp_dir/${comparison}.treatment.01.bam"
-control_00="$tmp_dir/${comparison}.control.00.bam"
-control_01="$tmp_dir/${comparison}.control.01.bam"
+# Write retained BAMs directly to their final directory to avoid copying them.
+bam_dir="$tmp_dir"
+if [[ "$write_pr_bam" == "true" ]]; then
+    bam_dir="${pr_bam_dir:-$output_dir/pseudo_replicate_bam}"
+    mkdir -p "$bam_dir"
+    echo "Pseudoreplicate BAM directory: $bam_dir"
+fi
+treatment_00="$bam_dir/${comparison}.treatment.00.bam"
+treatment_01="$bam_dir/${comparison}.treatment.01.bam"
+control_00="$bam_dir/${comparison}.control.00.bam"
+control_01="$bam_dir/${comparison}.control.01.bam"
 
 echo "===> [$comparison] Creating treatment and control pseudoreplicates"
 

@@ -1,4 +1,4 @@
-<tool id="idr_encode" name="ChIP-seq reproducibility" version="0.1.0" profile="23.0">
+<tool id="idr_encode" name="ChIP-seq reproducibility" version="0.2.0" profile="23.0">
     <description>with true, pooled and self pseudoreplicate IDR</description>
     <requirements>
         <requirement type="package" version="3.10">python</requirement>
@@ -30,6 +30,7 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
     --idr-threshold '${"%.12f" % float($idr_options.threshold)}'
     --threads \${GALAXY_SLOTS:-1}
     --seed '$idr_options.seed'
+    --write_pr_bam '$idr_options.write_pr_bam'
     --macs2-extra-arg '--keep-dup'
     --macs2-extra-arg '$macs_options.keep_dup'
 #if $macs_options.nomodel
@@ -95,6 +96,7 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
             </param>
             <param name="threshold" type="float" value="0.05" min="0.000000000001" max="1" label="Global IDR threshold" help="Only peaks passing this threshold are reported and counted." />
             <param name="seed" type="integer" value="0" min="0" max="2147483645" label="Pseudoreplicate assignment seed" help="The scripts derive additional seeds for controls and the second biological replicate." />
+            <param name="write_pr_bam" type="boolean" checked="false" truevalue="true" falsevalue="false" label="Keep pseudoreplicate BAM files" help="Return a collection of 12 BAMs: treatment and control halves for the pooled comparison and for each biological replicate. These files can be large." />
         </section>
     </inputs>
     <outputs>
@@ -116,6 +118,10 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
         <data name="pipeline_log" format="txt" label="${tool.name} on ${on_string}: complete pipeline log" />
         <collection name="macs_peaks" type="list" label="${tool.name} on ${on_string}: generated MACS2 narrowPeak files">
             <discover_datasets pattern="(?P&lt;designation&gt;.*)_peaks\.narrowPeak" directory="output" recurse="true" ext="bed" visible="false" />
+        </collection>
+        <collection name="pseudo_replicate_bam" type="list" label="${tool.name} on ${on_string}: pseudoreplicate BAM files">
+            <filter>idr_options['write_pr_bam']</filter>
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.bam" directory="output/pseudo_replicate_bam" ext="unsorted.bam" visible="false" />
         </collection>
     </outputs>
     <tests>
@@ -158,6 +164,7 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
                 <param name="rank" value="p.value" />
                 <param name="threshold" value="0.05" />
                 <param name="seed" value="0" />
+                <param name="write_pr_bam" value="false" />
             </section>
 
             <output
@@ -168,7 +175,8 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
             <!-- Les chemins des BAM varient dans Galaxy : assertions ciblées. -->
             <output name="parameters" ftype="tabular">
                 <assert_contents>
-                    <has_n_lines n="22" />
+                    <has_n_lines n="23" />
+                    <has_line line="write_pr_bam&#009;false" />
                     <has_line line="sample&#009;idr" />
                     <has_line line="input_mode&#009;bam_only" />
                     <has_line line="macs2_format&#009;BAMPE" />
@@ -294,7 +302,7 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
         </test>
 
         <!-- Test 2 : BAM + narrowPeak -->
-        <test expect_num_outputs="17">
+        <test expect_num_outputs="18">
             <param name="treatment_1"
                 value="inputs/testInput_treatment_rep1.bam"
                 ftype="bam" />
@@ -340,6 +348,7 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
                 <param name="rank" value="p.value" />
                 <param name="threshold" value="0.05" />
                 <param name="seed" value="0" />
+                <param name="write_pr_bam" value="true" />
             </section>
 
             <output
@@ -349,7 +358,8 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
 
             <output name="parameters" ftype="tabular">
                 <assert_contents>
-                    <has_n_lines n="24" />
+                    <has_n_lines n="25" />
+                    <has_line line="write_pr_bam&#009;true" />
                     <has_line line="sample&#009;idr" />
                     <has_line line="input_mode&#009;bam_and_narrowpeak" />
                     <has_text text="narrowpeak_1&#009;" />
@@ -463,6 +473,20 @@ bash '$__tool_directory__/run_idr_pipeline.sh'
                     file="outputs_bam_narrowpeak/testOutputCollection06_sp2_R01.narrowPeak"
                     ftype="bed" />
             </output_collection>
+            <output_collection name="pseudo_replicate_bam" type="list" count="12">
+                <element name="idr.treatment.pooled.00" ftype="unsorted.bam" />
+                <element name="idr.treatment.pooled.01" ftype="unsorted.bam" />
+                <element name="idr.control.pooled.00" ftype="unsorted.bam" />
+                <element name="idr.control.pooled.01" ftype="unsorted.bam" />
+                <element name="idr_rep1.treatment.00" ftype="unsorted.bam" />
+                <element name="idr_rep1.treatment.01" ftype="unsorted.bam" />
+                <element name="idr_rep1.control.00" ftype="unsorted.bam" />
+                <element name="idr_rep1.control.01" ftype="unsorted.bam" />
+                <element name="idr_rep2.treatment.00" ftype="unsorted.bam" />
+                <element name="idr_rep2.treatment.01" ftype="unsorted.bam" />
+                <element name="idr_rep2.control.00" ftype="unsorted.bam" />
+                <element name="idr_rep2.control.01" ftype="unsorted.bam" />
+            </output_collection>
         </test>
     </tests>
     <help><![CDATA[
@@ -499,6 +523,14 @@ Galaxy. The narrowPeak collection contains the MACS2 peaks
 generated by this run: eight files in BAM-only mode, six when existing peaks
 are supplied. The supplied TR peaks remain in the history and are not copied
 into this collection.
+
+Enable **Keep pseudoreplicate BAM files** to retain the exact treatment and
+control BAM halves used for PP and SP peak calling. The optional BAM collection
+contains twelve files (four pooled, four for replicate 1, four for replicate 2).
+They are written in output/pseudo_replicate_bam/ and kept independently of
+temporary-directory cleanup. This option is disabled by default. BAMs are
+returned using the unsorted.bam datatype because the pooled BAMs are not
+coordinate sorted. No additional sorting or indexing is performed.
 
 The branch manifest contains paths inside the job working directory; use the
 separate Galaxy output datasets to access those results after the job ends.
