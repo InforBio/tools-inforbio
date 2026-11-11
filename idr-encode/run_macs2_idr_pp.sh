@@ -26,6 +26,9 @@ Other options:
   --idr-threshold P           Global IDR cutoff used to retain peaks [0.05]
   --threads N                 samtools threads [1]
   --seed N                    pooled template-subsampling seed [0]
+  --write_pr_bam BOOL          retain coordinate-sorted pseudoreplicate BAMs
+                              and their .bam.bai indexes [false]
+  --pr-bam-dir DIR             retained BAM directory [OUTPUT_DIR/pseudo_replicate_bam]
 EOF
 }
 
@@ -56,6 +59,8 @@ idr_threshold="0.05"
 threads="${GALAXY_SLOTS:-1}"
 seed="0"
 keep_tmp_dir="false"
+write_pr_bam="false"
+pr_bam_dir=""
 macs2_extra_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -78,6 +83,8 @@ while [[ $# -gt 0 ]]; do
         --threads) require_value "$@"; threads="$2"; shift 2 ;;
         --seed) require_value "$@"; seed="$2"; shift 2 ;;
         --keep-tmp-dir) require_value "$@"; keep_tmp_dir="$2"; shift 2 ;;
+        --write_pr_bam) require_value "$@"; write_pr_bam="$2"; shift 2 ;;
+        --pr-bam-dir) require_value "$@"; pr_bam_dir="$2"; shift 2 ;;
         --macs2-extra-arg) require_value "$@"; macs2_extra_args+=("$2"); shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
@@ -90,6 +97,7 @@ done
 [[ "$threads" =~ ^[1-9][0-9]*$ ]] || die "--threads must be a positive integer"
 [[ "$seed" =~ ^-?[0-9]+$ ]] || die "--seed must be an integer"
 [[ "$keep_tmp_dir" == "true" || "$keep_tmp_dir" == "false" ]] || die "--keep-tmp-dir must be true or false"
+[[ "$write_pr_bam" == "true" || "$write_pr_bam" == "false" ]] || die "--write_pr_bam must be true or false"
 
 case "$idr_rank" in
     signal.value) rank_column=7 ;;
@@ -113,6 +121,47 @@ tmp_dir=$(mktemp -d "$output_dir/tmp/pooled-pseudoreplicates.XXXXXX")
 if [[ "${keep_tmp_dir:-false}" != "true" ]]; then
     trap 'rm -rf -- "$tmp_dir"' EXIT
 fi
+
+# Prepare a retained BAM for indexed access without changing the reads used by MACS2.
+prepare_retained_bam() {
+    local bam="$1"
+    local bam_name="${bam##*/}"
+    local sorted_bam="$tmp_dir/${bam_name%.bam}.sorted.bam"
+    local index_log="$tmp_dir/${bam_name}.index.log"
+
+    # Subsampling preserves input order. Avoid sorting an already sorted BAM,
+    # while indexing verifies the physical order rather than trusting the header.
+    if samtools view -H "$bam" | awk '
+        $1 == "@HD" {
+            for (i=2; i<=NF; i++) {
+                if ($i == "SO:coordinate") coordinate=1
+            }
+        }
+        END { exit !coordinate }
+    '; then
+        echo "===> Indexing coordinate-sorted pseudoreplicate: $bam"
+        if samtools index -@ "$view_threads" "$bam" 2> "$index_log"; then
+            return
+        fi
+        echo "===> Indexing failed; sorting this pseudoreplicate before retrying: $bam" >&2
+        rm -f -- "$bam.bai"
+    fi
+
+    echo "===> Coordinate sorting and indexing pseudoreplicate: $bam"
+    samtools sort \
+        -@ "$threads" \
+        -T "$tmp_dir/${bam_name}.sort" \
+        -o "$sorted_bam" \
+        "$bam" || die "could not coordinate sort pseudoreplicate BAM: $bam"
+    samtools quickcheck -v "$sorted_bam" ||
+        die "invalid sorted pseudoreplicate BAM produced: $bam"
+    samtools index -@ "$view_threads" "$sorted_bam" ||
+        die "could not index sorted pseudoreplicate BAM: $bam"
+
+    # Replace the retained files only after both sorting and indexing succeed.
+    mv -- "$sorted_bam" "$bam"
+    mv -- "$sorted_bam.bai" "$bam.bai"
+}
 
 check_sequence_dictionary_compatibility() {
     local bam1="$1"
@@ -170,10 +219,24 @@ echo "========================================================================"
 
 echo "===> [$sample_name] Pooling and splitting treatment and control BAMs"
 
-treatment_00="$tmp_dir/${sample_name}.treatment.pooled.00.bam"
-treatment_01="$tmp_dir/${sample_name}.treatment.pooled.01.bam"
-control_00="$tmp_dir/${sample_name}.control.pooled.00.bam"
-control_01="$tmp_dir/${sample_name}.control.pooled.01.bam"
+# Write retained BAMs directly to their final directory to avoid copying them.
+bam_dir="$tmp_dir"
+if [[ "$write_pr_bam" == "true" ]]; then
+    bam_dir="${pr_bam_dir:-$output_dir/pseudo_replicate_bam}"
+    mkdir -p "$bam_dir"
+    echo "Pseudoreplicate BAM directory: $bam_dir"
+fi
+treatment_00="$bam_dir/${sample_name}.treatment.pooled.00.bam"
+treatment_01="$bam_dir/${sample_name}.treatment.pooled.01.bam"
+control_00="$bam_dir/${sample_name}.control.pooled.00.bam"
+control_01="$bam_dir/${sample_name}.control.pooled.01.bam"
+
+# An existing index becomes stale as soon as its BAM is regenerated.
+if [[ "$write_pr_bam" == "true" ]]; then
+    for bam in "$treatment_00" "$treatment_01" "$control_00" "$control_01"; do
+        rm -f -- "$bam.bai" "$bam.csi"
+    done
+fi
 
 # samtools -@ specifies additional threads besides the main thread.
 if (( threads > 1 )); then
@@ -264,6 +327,13 @@ idr --samples \
     --output-file "$output_dir/idr/${sample_name}_pp_idr.txt" \
     --plot \
     --log-output-file "$output_dir/idr/${sample_name}_pp_idr.log"
+
+# Finalize retained files after IDR so the option does not change peak calling.
+if [[ "$write_pr_bam" == "true" ]]; then
+    for bam in "$treatment_00" "$treatment_01" "$control_00" "$control_01"; do
+        prepare_retained_bam "$bam"
+    done
+fi
 
 end_time=$(date +%s)
 elapsed=$((end_time - start_time))
